@@ -10,7 +10,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = 'django-insecure-w%_4y(!zj-a@6_6$ydd4y7uwqxove%fv0395-alm390g+#tmbi'
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -64,11 +64,12 @@ WSGI_APPLICATION = 'first_edu.wsgi.application'
 
 DATABASES = {
    'default': {
-       'ENGINE': 'django.db.backends.postgresql',
-       'NAME': "firststepedu",
-       'USER': 'postgres',
-       'PASSWORD': 'root',
-       'PORT': '5432',
+       'ENGINE': 'django.db.backends.postgresql_psycopg2',
+       'NAME': "firstedu_new",
+       'USER': 'firstedu_new',
+       'PASSWORD': 'firstedu_new',
+       'HOST': 'localhost',
+       'PORT': '',
    }
 }
 
@@ -114,15 +115,12 @@ AUTH_USER_MODEL = 'application.CustomUser'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = "nidheesh.nexevo@gmail.com"
 EMAIL_HOST_PASSWORD = "jdvcblfpzxpiiehl"
 EMAIL_PORT = 587
-
-
 
 PHONENUMBER_DB_FORMAT = "NATIONAL"
 PHONENUMBER_DEFAULT_FORMAT = "NATIONAL"

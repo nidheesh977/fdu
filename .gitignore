@@ -1,4 +1,4 @@
-# File created using '.gitignore Generator' for Visual Studio Code: https://bit.ly/vscode-gig
+\# File created using '.gitignore Generator' for Visual Studio Code: https://bit.ly/vscode-gig
 # Created by https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode,django,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,visualstudiocode,django,python
 
@@ -313,3 +313,6 @@ $RECYCLE.BIN/
 venv/
 application/migrations/
 admin_dashboard/migrations/
+static
+staticfiles
+media
