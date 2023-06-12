@@ -385,8 +385,10 @@ class OlympiadPage(View):
         today = date.today()
         obj = OlympiadExam.objects.filter(exam_date__gte=today).order_by("created_on")
         testimonials = Testimonials.objects.all()[:6]
-        board_exams = StudentPayments.objects.filter(student=request.user)
-        board_exams = board_exams.exclude(enrolled_type__in=["class","subject","paper", "competitive-exam","competitive-paper"])
+        board_exams = []
+        if request.user.is_authenticated:
+            board_exams = StudentPayments.objects.filter(student=request.user)
+            board_exams = board_exams.exclude(enrolled_type__in=["class","subject","paper", "competitive-exam","competitive-paper"])
         olympiad_enrolled = []
         for i in board_exams:
             olympiad_enrolled.append(i.olympiad_exam)
