@@ -2,6 +2,7 @@
 {% block content %}
 {% now "Y-m-d" as today %}
 <div class="container-fluid">
+    <a href = "#" style = "pointer-events: none;">{{breadcrumb}}</a>
     <div class="card shadow mb-4 mt-2">
         <div class="card-header py-3 d-sm-flex align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Questions</h6>
@@ -25,29 +26,57 @@
             </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>S.No</th>
-                            <th width="45%">Questions</th>
-                            <th>Correct Option</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for obj in qus_obj %}
-                        <tr>
-                            <td>{{forloop.counter}}</td>
-                            <td>{{obj.question}}</td>
-                            <td>{{obj.correct_answer}}</td>
-                            <td>
-                                <a href="{% url 'admin_dashboard:olympiad_edit_ques' olymp_id obj.id  %}" class="btn btn-primary btn-circle btn-sm"><i class="fas fa-edit fa-sm text-white-50"></i></a>
-                                <a href="javascript:void(0);" data="{{obj.id}}" class="btn btn-danger btn-circle btn-sm deleteItem"><i class="fas fa-trash"></i></a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type = "hidden" name = "action" value = "bulk_delete" />
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th width="45%">Questions</th>
+                                <th>Correct Option</th>
+                                <th>Action</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <div style = "text-align: right;">
+                                <button class="btn btn-danger mb-2"  type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModal">Delete selected</button>
+                            </div>
+                            <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="exampleModalLabel">Delete confirmation</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            Are you sure! Do you want to delete questions?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                            <button type="submit" class="btn btn-danger">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% for obj in qus_obj %}
+                            <tr>
+                                <td>{{forloop.counter}}</td>
+                                <td>{{obj.question}}</td>
+                                <td>{{obj.correct_answer}}</td>
+                                <td>
+                                    <a href="{% url 'admin_dashboard:olympiad_edit_ques' olymp_id obj.id  %}" class="btn btn-primary btn-circle btn-sm"><i class="fas fa-edit fa-sm text-white-50"></i></a>
+                                    <a href="javascript:void(0);" data="{{obj.id}}" class="btn btn-danger btn-circle btn-sm deleteItem"><i class="fas fa-trash"></i></a>
+                                </td>
+                                <td><input type="checkbox" name = "question[]" value = "{{obj.id}}"></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </form>
             </div>
         </div>
     </div>

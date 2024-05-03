@@ -5,6 +5,7 @@ from django.utils.translation import gettext as _
 from phonenumber_field.modelfields import PhoneNumberField
 from datetime import timedelta
 from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
 
 class ImportdantDates(models.Model):
     class Meta:
@@ -111,6 +112,8 @@ class Events(ImportdantDates):
     image = models.ImageField(_("Image"), upload_to="event_images/",blank=True, null=True)
     image_alt_name = models.CharField(_("Image Alt Name"), max_length=50, blank=True, null=True)
     event_fee = models.IntegerField(null = True, blank = True)
+
+    is_deleted = models.BooleanField(default = False)
 
     class Meta:
         verbose_name = _("Events")
@@ -225,8 +228,8 @@ class MarqueeTexts(ImportdantDates):
         return reverse("MarqueeTexts_detail", kwargs={"pk": self.pk})
 
 class Questions(ImportdantDates):
-    section = models.CharField(_("Section"), max_length=50, blank=True, null=True)
-    section_description = models.TextField(_("Section Description"), blank=True, null=True)
+    section = models.CharField(_("Section"), max_length=200, blank=True, null=True)
+    section_description = models.TextField(_("Section Description"), blank=True, null=True, default = "Section description")
     image = models.ImageField(upload_to = "question_images/", blank=True, null=True)
     image_link = models.CharField(max_length = 300, null = True, blank = True)
     section_time_limit = models.DurationField(_("Section Duration"),default=timedelta, null=True, blank=True)
@@ -236,6 +239,7 @@ class Questions(ImportdantDates):
     option3 = models.TextField(_("Option 3"), null=True, blank=True)
     option4 = models.TextField(_("Option 4"), null=True, blank=True)
     correct_answer = models.TextField(_("Correct Answer"), null=True, blank=True)
+    mark = models.IntegerField(default = 1)
 
     class Meta:
         verbose_name = _("Questions")
@@ -244,7 +248,7 @@ class Questions(ImportdantDates):
 
     def get_absolute_url(self):
         return reverse("Questions_detail", kwargs={"pk": self.pk})
-    
+
     def __str__(self):
         return self.question[:200]
 
@@ -278,6 +282,11 @@ class CompetitiveExam(ImportdantDates):
     price = models.DecimalField(_("Price"), max_digits=8, decimal_places=2,blank=True, null=True)
     repay_price = models.DecimalField(_("repay_price"), max_digits=8, decimal_places=2,blank=True, null=True)
     purchase_count = models.IntegerField(default = 0)
+    meta_title = models.CharField(_("Meta Title"), max_length=50, blank=True, null=True)
+    meta_description = models.TextField(_("Meta Description"), null=True, blank=True)
+    meta_keywords = models.TextField(_("Meta Keywords"), blank=True, null=True)
+    created_on = models.DateTimeField(_("Created on"), auto_now_add=True, null=True, blank=True)
+    updated_on = models.DateTimeField(_("Updated on"), auto_now=True, null=True, blank=True)
 
 class Subjects(MetaDetails):
     title = models.CharField(_("Title"), max_length=50, blank=True, null=True)
@@ -361,6 +370,45 @@ class StudentPayments(ImportdantDates):
             return self.repay_amount
         return self.price
     enrolled_type = models.CharField(_("Enrolled Type"), max_length=50, null=True, blank=True,choices=ENROLL_CHOICES)
+
+    @property
+    def class_title(self):
+        try:
+            paper = self.papers
+            subject = Subjects.objects.filter(assigned_papers = paper)
+            class_obj = Classes.objects.filter(assigned_subjects = subject[0])
+            return class_obj[0].title
+        except:
+            return ""
+
+    @property
+    def subject_title(self):
+        try:
+            paper = self.papers
+            subject = Subjects.objects.filter(assigned_papers = paper)
+            return subject[0].title
+        except:
+            return ""
+
+    @property
+    def subject_class_title(self):
+        try:
+            subject = self.subjects
+            class_obj = Classes.objects.filter(assigned_subjects = subject)
+            return class_obj[0].title
+        except:
+            return ""
+    
+    @property
+    def competitive_title(self):
+        try:
+            paper = self.competitive_paper
+            comp_exam = CompetitiveExam.objects.filter(assigned_papers = paper)
+            return comp_exam[0].exam_name
+        except:
+            return ""
+    
+
     class Meta:
         verbose_name = _("StudentPayments")
         verbose_name_plural = _("StudentPayments")
@@ -389,17 +437,53 @@ class AttendedPapers(ImportdantDates):
     olympiad_exam = models.ForeignKey("application.OlympiadExam", null = True, blank = True, on_delete = models.CASCADE)
     paper = models.ForeignKey("application.Papers", verbose_name=_("Paper"), blank=True, null=True, on_delete=models.CASCADE)
     correct_answers = models.IntegerField()
+    total_mark = models.IntegerField(default = 0)
     attended_questions = models.ManyToManyField("application.StudentSubmittedAnswers", verbose_name=_("Submitted Answers"),blank=True,)
     attend_date = models.DateField(_("Attend Date"), auto_now=False, auto_now_add=False, null=True,blank=True)
+    is_competitive = models.BooleanField(default = False)
+
+    is_deleted = models.BooleanField(default = False)
+    deleted_on = models.DateTimeField(null = True, blank = True)
 
     @property
     def marks(self):
         correct_answers = 0
+        total = 0
         for i in self.attended_questions.all():
             if i.is_correct_answer:
-                correct_answers+=1
-        return f"{(correct_answers)*10}/{(len(self.attended_questions.all()))*10}"
+                correct_answers+=i.question.mark
+            total += i.question.mark
+        return f"{(correct_answers)}/{total}"
+
+    @property
+    def class_title(self):
+        try:
+            paper = self.paper
+            subject = Subjects.objects.filter(assigned_papers = paper)
+            class_obj = Classes.objects.filter(assigned_subjects = subject[0])
+            return class_obj[0].title
+        except:
+            return ""
+
+    @property
+    def subject_title(self):
+        try:
+            paper = self.paper
+            subject = Subjects.objects.filter(assigned_papers = paper)
+            return subject[0].title
+        except:
+            return ""
     
+    @property
+    def competitive_title(self):
+        try:
+            paper = self.paper
+            comp_exam = CompetitiveExam.objects.filter(assigned_papers = paper)
+            return comp_exam[0].exam_name
+        except:
+            return ""
+    
+
     @property
     def wrong_ans_qno(self):
         qno = []
@@ -418,35 +502,40 @@ class AttendedPapers(ImportdantDates):
 
     @property
     def percentile(self):
+        submissions = AttendedPapers.objects.filter(paper = self.paper).order_by("-total_mark")
         position = 0
-        submissions = AttendedPapers.objects.filter(paper = self.paper).order_by("correct_answers")
+        marks = []
         for i in submissions:
-            if i.student == self.student:
-                position+=1
+            position += 1
+            if i.total_mark == self.total_mark:
                 break
-            else:
-                position+=1
-        return int((position/len(submissions))*100)
+        current_position = (len(submissions)+1)-position
+        return int((current_position/len(submissions))*100)
 
     @property
     def percentage(self):
-        correct_answers = 0
-        for i in self.attended_questions.all():
-            if i.is_correct_answer:
-                correct_answers+=1
-        percentage_val = ((correct_answers)/(len(self.attended_questions.all())))*100
-        return f"{int(percentage_val)}%"
+        try:
+            correct_answers = 0
+            total = 0
+            for i in self.attended_questions.all():
+                if i.is_correct_answer:
+                    correct_answers+=i.question.mark
+                total += i.question.mark
+            current_percentage = (correct_answers/total)*100
+        except:
+            current_percentage = 100
+        return f"{current_percentage}%"
     @property
     def more_score_count(self):
-        position = 0
-        submissions = AttendedPapers.objects.filter(paper = self.paper).order_by("correct_answers")
+        students = []
+        submissions = AttendedPapers.objects.filter(paper = self.paper).order_by("-total_mark")
         for i in submissions:
-            if i.student == self.student:
-                position+=1
+            if i.total_mark == self.total_mark:
                 break
-            else:
-                position+=1
-        return int(len(submissions) - position)
+            if i.student.id not in students and i.student.id != self.student.id:
+                students.append(i.student.id)
+        return len(students)
+    
     class Meta:
         verbose_name = _("AttendedPapers")
         verbose_name_plural = _("AttendedPapers")
@@ -463,6 +552,50 @@ class OlympiadExam(ImportdantDates):
     purchase_count = models.IntegerField(default = 0)
     exam_date = models.DateField()
     exam_time = models.TimeField()
+    exam_time_till = models.TimeField()
+    meta_title = models.CharField(_("Meta Title"), max_length=50, blank=True, null=True)
+    meta_description = models.TextField(_("Meta Description"), null=True, blank=True)
+    meta_keywords = models.TextField(_("Meta Keywords"), blank=True, null=True)
 
     def __str__(self):
         return self.paper.title
+    
+class HomePageCounts(models.Model):
+    visitors = models.IntegerField(default = 200)
+    registered_students = models.IntegerField(default = 50)
+    exams_taken = models.IntegerField(default = 100)
+    olympiad_attempted = models.IntegerField(default = 50)
+
+class DownloadDocument(models.Model):
+    title = models.CharField(max_length = 200)
+    description = models.TextField()
+    file = models.FileField(upload_to = "download_documents/")
+
+    def __str__(self):
+        return self.title
+
+class MailContent(models.Model):
+    MAIL_FOR_CHOICES = (
+        ("Forgot password", "Forgot password"),
+        ("Payment success", "Payment success"),
+        ("Event alert", "Event alert"),
+        ("Olympiad Notification", "Olympiad Notification")
+    )
+    mail_for = models.CharField(max_length = 200, choices = MAIL_FOR_CHOICES)
+    subject = models.TextField()
+    content = models.TextField()
+
+    def __str__(self):
+        return self.mail_for
+        
+
+class PopupContent(models.Model):
+    title = models.CharField(max_length = 500, blank = True, default = "")
+    sub_title = models.CharField(max_length = 500, blank = True, default = "")
+    highlight_text = models.CharField(max_length = 50, blank = True, default = "")
+    discount_title = models.CharField(max_length = 500, blank = True, default = "")
+    discount_percentage = models.CharField(max_length = 500, blank = True, default = "")
+    discount_description = models.CharField(max_length = 500, blank = True, default = "")
+    link = models.CharField(max_length = 200, blank = True, default = "")
+    banner_image = models.ImageField(upload_to = "popup_banner", null = True, blank = True)
+

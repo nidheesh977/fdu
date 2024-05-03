@@ -19,6 +19,17 @@ from utils.constants import EmailContents, ImageSizes
 from utils.functions import OTP_Gen, is_ajax, reterive_request_data
 import pandas as pd
 from django.core.exceptions import BadRequest
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.db.models import Q
+from django.utils import timezone
+
+class AdminOnlyMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def handle_no_permission(self):
+        return redirect("admin_dashboard:admin-login")
 
 
 class AdminLogin(View):
@@ -114,11 +125,11 @@ class AdminChangePassword(View):
             messages.error(request,"password not matched")
             return redirect("admin_dashboard:admin_change_password")
 
-class AdminDashboard(LoginRequiredMixin,View):
+class AdminDashboard(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
-        registerdUsers = CustomUser.objects.all().exclude(is_superuser=True)
+        registerdUsers = CustomUser.objects.all().exclude(is_superuser=True).order_by('-id')
         blogs = Blogs.objects.all().count()
-        events = Events.objects.all().count()
+        events = Events.objects.filter(is_deleted = False).count()
         enquiry = ContactUs.objects.all().count()
         
         context = {
@@ -130,7 +141,7 @@ class AdminDashboard(LoginRequiredMixin,View):
         }
         return render(request,"admin_dashboard_base.html",context)
 
-class BannerView(LoginRequiredMixin,View):
+class BannerView(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         objs = HomeBanners.objects.all().order_by("created_on")
         context = {"objs":objs}
@@ -144,7 +155,7 @@ class BannerView(LoginRequiredMixin,View):
                     }
         return JsonResponse(to_return,safe=True,)
 
-class AddBanner(LoginRequiredMixin,View):
+class AddBanner(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         context = {
             "image_size":ImageSizes.homepage_img_size_str,
@@ -172,7 +183,7 @@ class AddBanner(LoginRequiredMixin,View):
         return redirect("admin_dashboard:home-banner")
 
 
-class EditBanner(LoginRequiredMixin,View):
+class EditBanner(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         obj = get_object_or_404(HomeBanners,id=kwargs.get("id"))
         context = {"obj":obj,"image_size":ImageSizes.homepage_img_size_str,}
@@ -196,7 +207,7 @@ class EditBanner(LoginRequiredMixin,View):
         obj.save()
         return redirect("admin_dashboard:home-banner")
 
-class MarqueeText(View):
+class MarqueeText(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         obj,created = MarqueeTexts.objects.get_or_create(id=1)
         context = {"obj":obj}
@@ -208,7 +219,7 @@ class MarqueeText(View):
         obj.save()
         return redirect("admin_dashboard:marquee")
 
-class BlogsList(View):
+class BlogsList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         objs = Blogs.objects.all().order_by("created_on")
         context = {
@@ -223,7 +234,7 @@ class BlogsList(View):
                     }
         return JsonResponse(to_return,safe=True,)
 
-class AddBlog(View):
+class AddBlog(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         context = {"img_size":ImageSizes.blog_img_size_str}
         return render(request,"blog-add.html",context)
@@ -256,7 +267,7 @@ class AddBlog(View):
             messages.error(request, "URL must be unique")
             return redirect("admin_dashboard:blog-add")
         
-class EditBlog(View):
+class EditBlog(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         obj = get_object_or_404(Blogs,id=kwargs.get("id"))
         context = {"obj":obj,"img_size":ImageSizes.blog_img_size_str}
@@ -294,9 +305,9 @@ class EditBlog(View):
             messages.error(request, "URL must be unique")
             return redirect("admin_dashboard:blog-edit", id=kwargs.get("id"))
 
-class EventsList(View):
+class EventsList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
-        objs = Events.objects.all().order_by("created_on")
+        objs = Events.objects.filter(is_deleted = False).order_by("-id")
         context = {"objs":objs}
         return render(request,"event-view.html",context)
     
@@ -305,31 +316,39 @@ class EventsList(View):
         id = request.POST.get("objId")
         event = Events.objects.get(id=id)
         if method == "delete":
-            event.delete()
+            event.is_deleted = True
+            event.save()
             to_return = {
                             "title":"Deleted",
                             "icon":"success",
                         }
         else:
             registered_events = RegisterdEvents.objects.filter(event = event)
-            recipient_list = []
             for i in registered_events:
-                recipient_list.append(i.student.email)
-            print(recipient_list)
-            if len(recipient_list) >= 1:
                 subject = f'Event alert'
                 email_from = settings.EMAIL_HOST_USER
                 plaintext = get_template('email_templates/event_notification.txt')
                 htmly     = get_template('email_templates/event_notification.html')
+                content = """
+                    Event alert
+                    Event title: {title}
+                    Event date: {date}
+                """
+                if MailContent.objects.filter(mail_for = "Event alert").exists():
+                    mail_obj = MailContent.objects.get(mail_for = "Event alert")
+                    if ("{title}" in mail_obj.content) and ("{date}" in mail_obj.content):
+                        content = mail_obj.content
+                    subject = mail_obj.subject
+                content = content.replace("{title}", event.title)
+                content = content.replace("{date}", str(event.event_date))
 
                 d = {
-                    'title': event.title,
-                    'date': event.event_date,
+                    "content": content
                 }
 
                 text_content = plaintext.render(d)
                 html_content = htmly.render(d)
-                msg = EmailMultiAlternatives(subject, text_content, email_from, recipient_list)
+                msg = EmailMultiAlternatives(subject, text_content, email_from, [i.student.email])
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
 
@@ -339,13 +358,15 @@ class EventsList(View):
                         }
         return JsonResponse(to_return,safe=True,)
     
-class EditDetails(View):
+class EditDetails(AdminOnlyMixin,View):
     def get(self, request, *args, **kwargs):
-        objs = RegisterdEvents.objects.filter(event = Events.objects.get(id = kwargs["id"]))
-        context = {"objs":objs}
+        event = Events.objects.get(id = kwargs["id"])
+        objs = RegisterdEvents.objects.filter(event = event).order_by("-id")
+        breadcrumbs = event.title
+        context = {"objs":objs, "breadcrumbs": breadcrumbs}
         return render(request,"event-detail.html",context)
 
-class AddEvent(View):
+class AddEvent(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         context = {"img_size":ImageSizes.events_img_size_str}
         return render(request,"event-add.html",context)
@@ -372,7 +393,7 @@ class AddEvent(View):
             messages.error(request,"Image scale is not acceptable")
             return redirect("admin_dashboard:event-add")
 
-class EditEvent(View):
+class EditEvent(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         obj = get_object_or_404(Events,id=kwargs.get("id"))
         context = {"obj":obj, "img_size":ImageSizes.events_img_size_str}
@@ -404,7 +425,7 @@ class EditEvent(View):
             obj.save()
             return redirect("admin_dashboard:events-list")
 
-class NewsList(View):
+class NewsList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         objs = News.objects.all().order_by("created_on")
         context = {"objs":objs,"img_size":ImageSizes.news_img_size_img_size_str}
@@ -418,7 +439,7 @@ class NewsList(View):
                     }
         return JsonResponse(to_return,safe=True,)
     
-class AddNews(View):
+class AddNews(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         context = {"img_size":ImageSizes.news_img_size_img_size_str}
         return render(request,"news-add.html",context)
@@ -448,7 +469,7 @@ class AddNews(View):
                 )
             return redirect("admin_dashboard:news-list")
 
-class EditNews(View):
+class EditNews(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         obj = get_object_or_404(News,id=kwargs.get("id"))
         context = {"obj":obj,"img_size":ImageSizes.news_img_size_img_size_str}
@@ -479,7 +500,7 @@ class EditNews(View):
             return redirect("admin_dashboard:news-list")
 
 
-class TestimonialsList(View):
+class TestimonialsList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         objs = Testimonials.objects.all().order_by("created_on")
         context = {"objs":objs}
@@ -493,7 +514,7 @@ class TestimonialsList(View):
                     }
         return JsonResponse(to_return,safe=True,)
     
-class AddTestimonial(View):
+class AddTestimonial(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         context = {"img_size":ImageSizes.testimonials_img_size_str}
         return render(request,"testimonials-add.html",context)
@@ -517,7 +538,7 @@ class AddTestimonial(View):
             messages.error(request,"Image scale is not acceptable")
             return redirect("admin_dashboard:testimonial-add")
 
-class EditTestimonial(View):
+class EditTestimonial(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         obj = get_object_or_404(Testimonials,id=kwargs.get("id"))
         context = {"obj":obj,"img_size":ImageSizes.testimonials_img_size_str}
@@ -549,7 +570,7 @@ class EditTestimonial(View):
             return redirect("admin_dashboard:testimonials-list")
 
 
-class ResultAnnouncementsList(View):
+class ResultAnnouncementsList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         objs = ResultAnnouncements.objects.all().order_by("created_on")
         context = {"objs":objs}
@@ -564,7 +585,7 @@ class ResultAnnouncementsList(View):
         return JsonResponse(to_return,safe=True,)
 
 
-class AddResultAnnouncement(View):
+class AddResultAnnouncement(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         context = {
             "img_size":ImageSizes.result_announce_img_size_str
@@ -590,7 +611,7 @@ class AddResultAnnouncement(View):
             messages.error(request,"Image scale is not acceptable")
             return redirect("admin_dashboard:result_announcement-add")
 
-class EditResultAnnouncement(View):
+class EditResultAnnouncement(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         obj = get_object_or_404(ResultAnnouncements,id=kwargs.get("id"))
         context = {
@@ -604,7 +625,7 @@ class EditResultAnnouncement(View):
         
         obj.title = request.POST.get("title",obj.title)
         obj.winner_name = request.POST.get("winner_name",obj.winner_name)
-        obj.winner_mark = int(request.POST.get("winner_mark",obj.winner_mark))
+        obj.winner_mark = request.POST.get("winner_mark",obj.winner_mark)
         
         obj.winner_image_alt_name = request.POST.get("uploaded_image_alt_name",obj.winner_image_alt_name)
         obj.winner_description = request.POST.get("description",obj.winner_description)
@@ -628,7 +649,7 @@ class EditResultAnnouncement(View):
             return redirect("admin_dashboard:result_announcements-list")
 
 
-class ContactEnquiry(View):
+class ContactEnquiry(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         data = ContactUs.objects.all().order_by("created_on")
         context = {
@@ -636,17 +657,17 @@ class ContactEnquiry(View):
         }
         return render(request,"contact-enquiry.html", context)
 
-class RegistredUsers(View):
+class RegistredUsers(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
-        objs = CustomUser.objects.all().exclude(is_superuser=True).order_by("created_on")
+        objs = CustomUser.objects.all().exclude(is_superuser=True).order_by("-id")
         context = {"objs":objs}
         return render(request,"registration.html",context)
 
 
 # CM - Class Management
-class CMClassListView(View):
+class CMClassListView(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
-        objs = Classes.objects.all()
+        objs = Classes.objects.all().order_by("id")
         context = {
             "objs":objs,
         }
@@ -678,9 +699,9 @@ class CMClassListView(View):
             obj = get_object_or_404(Classes,id=request.POST.get("id"))       
             obj.title = request.POST.get("class_title",obj.title)
             obj.description = request.POST.get("class_description",obj.description)
-            obj.meta_title = request.POST.get("meta_title",obj.meta_title)
-            obj.meta_description = request.POST.get("meta_description",obj.meta_description)
-            obj.meta_keywords = request.POST.get("meta_keywords",obj.meta_keywords)
+            # obj.meta_title = request.POST.get("meta_title",obj.meta_title)
+            # obj.meta_description = request.POST.get("meta_description",obj.meta_description)
+            # obj.meta_keywords = request.POST.get("meta_keywords",obj.meta_keywords)
             obj.price = request.POST.get("price",obj.price)
             obj.repay_price = request.POST.get("repay_price",obj.repay_price)
             obj.save()
@@ -691,19 +712,20 @@ class CMClassListView(View):
                 description = request.POST.get("class_description"),
                 price = request.POST.get("price"),
                 repay_price = request.POST.get("repay_price"),
-                meta_title = request.POST.get("meta_title"),
-                meta_description = request.POST.get("meta_description"),
-                meta_keywords = request.POST.get("meta_keywords"), 
+                # meta_title = request.POST.get("meta_title"),
+                # meta_description = request.POST.get("meta_description"),
+                # meta_keywords = request.POST.get("meta_keywords"), 
             )
         return redirect("admin_dashboard:clsm-classes-list")
 
 
-class CMSubjectsListView(View):
+class CMSubjectsListView(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         cls_obj = get_object_or_404(Classes,id=kwargs.get("class_id")) 
         context = {
             "cls_id":kwargs.get("class_id"),
-            "subjects":cls_obj.assigned_subjects.all()
+            "subjects":cls_obj.assigned_subjects.all(),
+            "breadcrumb": cls_obj.title
         }
         return render(request,"class_management/subjects/subjects-list.html",context)
     
@@ -757,16 +779,19 @@ class CMSubjectsListView(View):
             return redirect("admin_dashboard:clsm-subjects-list",class_id=cls_obj.id)
 
 
-class CMPapersListView(View):
+class CMPapersListView(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         SUBJECT_ID = kwargs.get("subject_id")
         CLASS_ID = kwargs.get("class_id")
+        class_obj = Classes.objects.get(id = CLASS_ID)
         sub_obj = get_object_or_404(Subjects,id=SUBJECT_ID)
         objs = sub_obj.assigned_papers.filter(is_competitive=False).order_by("created_on")
         context = {
-            "cls_id":CLASS_ID,
-            "sub_id":SUBJECT_ID,
-            "objs":objs,
+            "cls_id": CLASS_ID,
+            "sub_id": SUBJECT_ID,
+            "objs": objs,
+            "breadcrumb1": f"{class_obj.title}",
+            "breadcrumb2": f"{sub_obj.title}"
         }
         return render(request,"class_management/papers/papers-list.html",context)
 
@@ -821,12 +846,13 @@ class CMPapersListView(View):
                 description = request.POST.get("paper_description"),
                 instructions = request.POST.get("general_instructions"),
                 price = request.POST.get("price"),
+                repay_price = request.POST.get("repay_price"),
                 section_details=final_list,
             )
             sub_obj.assigned_papers.add(paper_obj)
             return redirect("admin_dashboard:clsm-papers-list",class_id=CLASS_ID,subject_id=SUBJECT_ID)
 
-class CMQuestionsList(View):
+class CMQuestionsList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         PAPER_ID = kwargs.get("paper_id")
         CLASS_ID = kwargs.get("class_id")
@@ -835,32 +861,50 @@ class CMQuestionsList(View):
         temp_images = TempImages.objects.filter(paper = paper_obj)
 
         if CLASS_ID and SUBJECT_ID:
+            class_obj = Classes.objects.get(id = CLASS_ID)
+            subject_obj = Subjects.objects.get(id = SUBJECT_ID)
             context = {
-                "qus_obj":paper_obj.assigned_questions.all().order_by("created_on"),
+                "qus_obj":paper_obj.assigned_questions.all().order_by("id"),
                 "cls_id":CLASS_ID,
                 "sub_id":SUBJECT_ID,
                 "paper_id":PAPER_ID,
-                "temp_images": temp_images
+                "temp_images": temp_images,
+                "breadcrumb1": f"{class_obj.title}",
+                "breadcrumb2": f"{subject_obj.title}",
+                "breadcrumb3": f"{paper_obj.title}"
             }
             return render(request,"class_management/papers/questions-list.html",context)
         else:
+            comp_exam = CompetitiveExam.objects.get(id = kwargs.get("exm_id"))
             context = {
                 'exm_id':kwargs.get("exm_id"),
                 "paper_id":PAPER_ID,
-                "qus_obj":paper_obj.assigned_questions.all(),
-                "temp_images": temp_images
+                "qus_obj":paper_obj.assigned_questions.all().order_by("id"),
+                "temp_images": temp_images,
+                "breadcrumb1": f"{comp_exam.exam_name}",
+                "breadcrumb2": f"{paper_obj.title}"
             }
             return render(request,"competitive_management/competitve_qus_list.html",context)
 
     def post(self,request,*args, **kwargs):
-        get_object_or_404(Questions,id=request.POST.get("objId")).delete()
-        to_return = {
-                        "title":"Deleted",
-                        "icon":"success",
-                    }
-        return JsonResponse(to_return,safe=True,)
+        if request.POST.get("objId"):
+            get_object_or_404(Questions,id=request.POST.get("objId")).delete()
+            to_return = {
+                            "title":"Deleted",
+                            "icon":"success",
+                        }
+            return JsonResponse(to_return,safe=True,)
+        else:
+            try:
+                ids_lst = request.POST.getlist('question[]')
+                for ques_id in ids_lst:
+                    question = Questions.objects.get(id = ques_id)
+                    question.delete()
+                return redirect(request.get_full_path())
+            except:
+                return redirect(request.get_full_path())
 
-class CMAddPaper(View):
+class CMAddPaper(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
 
         return render(request,"class_management/papers/add_paper.html")
@@ -884,12 +928,13 @@ class CMAddPaper(View):
             description = request.POST.get("paper_description"),
             instructions = request.POST.get("general_instructions"),
             price = request.POST.get("price"),
+            repay_price = request.POST.get("repay_price"),
             section_details=final_list,
         )
         SUBJECT_OBJ.assigned_papers.add(paper_obj)
         return redirect("admin_dashboard:clsm-papers-list",class_id=CLASS_ID,subject_id=SUBJECT_ID)
 
-class CMEditPaper(View):
+class CMEditPaper(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         paper_id = kwargs.get("id")
         paper_obj = Papers.objects.get(id = paper_id)
@@ -927,7 +972,7 @@ class CMEditPaper(View):
 
         return redirect("admin_dashboard:clsm-papers-list",class_id=CLASS_ID,subject_id=SUBJECT_ID)
 
-class CMAddQuestions(View):
+class CMAddQuestions(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
 
         PAPER_ID = kwargs.get("paper_id")
@@ -968,6 +1013,7 @@ class CMAddQuestions(View):
             qus_obj = Questions.objects.create(
             section = request.POST.get("section"),
             section_description = request.POST.get("section_description"),
+            mark = request.POST.get("mark"),
             section_time_limit = section_time_limit,
             question = request.POST.get("question"),
             option1 = request.POST.get("option1"),
@@ -1000,7 +1046,7 @@ class CMAddQuestions(View):
                 return HttpResponseRedirect(redirect_to=rr)
 
 
-class CMEditQuestions(View):
+class CMEditQuestions(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         PAPER_ID = kwargs.get("paper_id")
         CLASS_ID = kwargs.get("class_id")
@@ -1056,6 +1102,7 @@ class CMEditQuestions(View):
             qus_obj.section_description = request.POST.get("section_description",qus_obj.section_description)
             qus_obj.section_time_limit = section_time_limit if section_time_limit else qus_obj.section_time_limit
             qus_obj.question = request.POST.get("question",qus_obj.question)
+            qus_obj.mark = request.POST.get("mark")
             qus_obj.option1 = request.POST.get("option1",qus_obj.option1)
             qus_obj.option2 = request.POST.get("option2",qus_obj.option2)
             qus_obj.option3 = request.POST.get("option3",qus_obj.option3)
@@ -1077,7 +1124,7 @@ class CMEditQuestions(View):
                 return redirect("admin_dashboard:comp_ques_edit", paper_id=PAPER_ID, qus_id =kwargs.get("qus_id"))
 
 
-class CompetitiveManagementAddPaper(View):
+class CompetitiveManagementAddPaper(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         return render(request,"competitive_management/comp_add_paper.html")
 
@@ -1099,13 +1146,14 @@ class CompetitiveManagementAddPaper(View):
             description = request.POST.get("paper_description"),
             instructions = request.POST.get("general_instructions"),
             price = request.POST.get("price"),
+            repay_price = request.POST.get("repay_price"),
             section_details=final_list,
         )
         SUBJECT_OBJ.assigned_papers.add(paper_obj)
         return redirect("admin_dashboard:competitve_papers_list",exm_id=EXAM_ID)
 
 
-class CompetitiveManagementEditPaper(View):
+class CompetitiveManagementEditPaper(AdminOnlyMixin,View):
 
     def get(self,request,*args, **kwargs):
         EXAM_ID = kwargs.get("exm_id")
@@ -1145,13 +1193,14 @@ class CompetitiveManagementEditPaper(View):
         
         return redirect("admin_dashboard:competitve_papers_list",exm_id=EXAM_ID)
 
-class CompetitiveManagementPapersList(View):
+class CompetitiveManagementPapersList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         com_obj = get_object_or_404(CompetitiveExam,id=kwargs.get("exm_id"))
         objs = com_obj.assigned_papers.all()
         context = {
             "objs":objs,
             "exm_id":kwargs.get("exm_id"),
+            "breadcrumb": com_obj.exam_name
         }
         return render(request,"competitive_management/competitive_papers_list.html",context)
 
@@ -1192,13 +1241,14 @@ class CompetitiveManagementPapersList(View):
                 description = request.POST.get("paper_description"),
                 instructions = request.POST.get("general_instructions"),
                 price = request.POST.get("price"),
+                repay_price = request.POST.get("repay_price"),
                 is_competitive=True,
             )
             com_obj.assigned_papers.add(paper_obj)
             return redirect("admin_dashboard:competitve_papers_list",exm_id=kwargs.get("exm_id"))
 
 
-class CompetitiveExamsList(View):
+class CompetitiveExamsList(AdminOnlyMixin,View):
     def get(self, request,*args, **kwargs):
         objs = CompetitiveExam.objects.all()
         context = {
@@ -1222,7 +1272,10 @@ class CompetitiveExamsList(View):
                 "exam_name",
                 "description",
                 "price",
-                "repay_price"
+                "repay_price",
+                "meta_title",
+                "meta_description",
+                "meta_keywords",
             )
             to_return = {"obj":list(obj)[0]}
             return JsonResponse(to_return,safe=True,)
@@ -1233,6 +1286,9 @@ class CompetitiveExamsList(View):
             obj.description = request.POST.get("exam_description",obj.description)
             obj.price = request.POST.get("exam_price",obj.price)
             obj.repay_price = request.POST.get("repay_price",obj.repay_price)
+            obj.meta_title = request.POST.get("meta_title",obj.meta_title)
+            obj.meta_description = request.POST.get("meta_description",obj.meta_description)
+            obj.meta_keywords = request.POST.get("meta_keywords",obj.meta_keywords) 
             obj.save()
             return redirect("admin_dashboard:competitve_exams_list")
         else:
@@ -1240,10 +1296,14 @@ class CompetitiveExamsList(View):
                 exam_name = request.POST.get("exam_title"),
                 description = request.POST.get("exam_description"),
                 price = request.POST.get("exam_price"),
-                repay_price = request.POST.get("repay_price"), )
+                repay_price = request.POST.get("repay_price"),
+                meta_title = request.POST.get("meta_title"),
+                meta_description = request.POST.get("meta_description"),
+                meta_keywords = request.POST.get("meta_keywords")
+            )
             return redirect("admin_dashboard:competitve_exams_list")
 
-class CMBulkQuestions(View):
+class CMBulkQuestions(AdminOnlyMixin,View):
     def post(self, request, *args, **kwargs):
         try:
             PAPER_ID = kwargs.get("paper_id")
@@ -1252,26 +1312,26 @@ class CMBulkQuestions(View):
             df = pd.read_csv (request.FILES["file"])
             for i in df.iterrows():
                 if str(i[1].question) != "nan":
-                    time_limit = i[1].time_dutation.split(":")
+                    time_limit = i[1].time_duration.split(":")
                     SECONDS = int(time_limit[1])
                     MINUTES = int(time_limit[0])
                     section_time_limit = timedelta(seconds=SECONDS, minutes=MINUTES)
+                    answer = i[1].answer
                     qus_obj = Questions.objects.create(
-                        section_description = "",
+                        section = i[1].section,
+                        section_description = i[1].section_description,
                         section_time_limit = section_time_limit,
                         question = i[1].question,
                         option1 = i[1].optionA,
                         option2 = i[1].optionB,
                         option3 = i[1].optionC,
                         option4 = i[1].optionD,
-                        correct_answer = i[1][i[1].answer],
+                        mark = i[1].mark,
+                        correct_answer = i[1][answer.strip()],
                     )
                     if "image" in i[1] and str(i[1].image) != "nan":
                         print(str(i[1].image))
                         qus_obj.image_link = i[1].image
-                        qus_obj.save()
-                    if "section" in i[1] and str(i[1].section) != "nan":
-                        qus_obj.section = i[1].section,
                         qus_obj.save()
                     paper_obj = get_object_or_404(Papers,id=PAPER_ID)
                     paper_obj.assigned_questions.add(qus_obj)
@@ -1282,7 +1342,7 @@ class CMBulkQuestions(View):
         except:
             raise BadRequest('Invalid file.')
 
-class CMBulkImageGenerateLink(View):
+class CMBulkImageGenerateLink(AdminOnlyMixin,View):
     def post(self, request, *args, **kwargs):
         try:
             PAPER_ID = kwargs.get("paper_id")
@@ -1295,19 +1355,22 @@ class CMBulkImageGenerateLink(View):
         except:
             raise BadRequest('Invalid files.')
         
-class PaymentDetails(View):
+class PaymentDetails(AdminOnlyMixin,View):
     def get(self, request):
-        payments = StudentPayments.objects.all()
-        return render(request, "payment_details.html", context = {"payments": payments})
+        payments = StudentPayments.objects.all().order_by("-id")
+        objs = RegisterdEvents.objects.all().order_by("-id")
+        return render(request, "payment_details.html", context = {"payments": payments, "objs":objs})
         
-class UserPaymentDetails(View):
+class UserPaymentDetails(AdminOnlyMixin,View):
     def get(self, request, *args, **kwargs):
-        payments = StudentPayments.objects.filter(student = CustomUser.objects.get(id =kwargs["id"]))
-        return render(request, "user_payment_details.html", context = {"payments": payments})
+        user = CustomUser.objects.get(id =kwargs["id"])
+        payments = StudentPayments.objects.filter(student = user).order_by("-id")
+        objs = RegisterdEvents.objects.filter(student = user).order_by("-id")
+        return render(request, "user_payment_details.html", context = {"payments": payments, "objs": objs})
     
 # Olympiad
 
-class OlympiadManagementAddExam(View):
+class OlympiadManagementAddExam(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         return render(request,"olympiad_management/olymp_add_exam.html")
     
@@ -1329,20 +1392,31 @@ class OlympiadManagementAddExam(View):
             description = request.POST.get("paper_description"),
             instructions = request.POST.get("general_instructions"),
             price = request.POST.get("price"),
+            repay_price = request.POST.get("repay_price"),
             is_competitive=False,
             section_details = final_list
         )
         olymp_obj = OlympiadExam.objects.create(
-            exam_date = request.POST.get("exam_date"),
-            exam_time = request.POST.get("exam_time"),
+            exam_date = request.POST.get("exam_date_from"),
+            exam_time = request.POST.get("exam_time_from"),
+            exam_time_till = request.POST.get("exam_time_till"),
+            meta_title = request.POST.get("meta_title"),
+            meta_description = request.POST.get("meta_description"),
+            meta_keywords = request.POST.get("meta_keywords"),
             paper = paper_obj
         )
         return redirect("admin_dashboard:olympiad_exams_list")
 
-class OlympiadManagementAddQuestion(View):
+class OlympiadManagementAddQuestion(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         olymp_id = kwargs["id"]
-        return render(request,"olympiad_management/olymp_add_ques.html", context = {"olymp_id": olymp_id})
+        olympiad = OlympiadExam.objects.get(id = olymp_id)
+        paper_obj = olympiad.paper
+        if paper_obj.section_details:
+            SECTION_DETAILS = [json.loads(i) for i in paper_obj.section_details]
+        else:
+            SECTION_DETAILS = []
+        return render(request,"olympiad_management/olymp_add_ques.html", context = {"olymp_id": olymp_id, "section_details":SECTION_DETAILS,})
     
     def post(self,request,*args, **kwargs):
         olympiad_obj = OlympiadExam.objects.get(id = kwargs.get("id"))
@@ -1356,6 +1430,7 @@ class OlympiadManagementAddQuestion(View):
             section_description = request.POST.get("section_description"),
             section_time_limit = section_time_limit,
             question = request.POST.get("question"),
+            mark = request.POST.get("mark"),
             option1 = request.POST.get("option1"),
             option2 = request.POST.get("option2"),
             option3 = request.POST.get("option3"),
@@ -1369,7 +1444,7 @@ class OlympiadManagementAddQuestion(View):
             paper_obj.assigned_questions.add(qus_obj)
         return redirect("admin_dashboard:olympiad_ques_list", id = kwargs["id"])
 
-class OlympiadManagementEditExam(View):
+class OlympiadManagementEditExam(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         olympiad = OlympiadExam.objects.get(id = kwargs.get("id"))
         paper_obj = olympiad.paper
@@ -1391,18 +1466,22 @@ class OlympiadManagementEditExam(View):
         paper_obj.price = request.POST.get("price")
         paper_obj.is_competitive=False
         olympiad.exam_date = request.POST.get("exam_date")
-        olympiad.exam_time = request.POST.get("exam_time")
+        olympiad.exam_time = request.POST.get("exam_time_from")
+        olympiad.exam_time_till = request.POST.get("exam_time_till")
+        olympiad.meta_title = request.POST.get("meta_title")
+        olympiad.meta_description = request.POST.get("meta_description")
+        olympiad.meta_keywords = request.POST.get("meta_keywords")
         paper_obj.save()
         olympiad.save()
         return redirect("admin_dashboard:olympiad_exams_list")
 
-class OlympiadManagementQuestionList(View):
+class OlympiadManagementQuestionList(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         olympiad = OlympiadExam.objects.get(id = kwargs.get("id"))
         paper = olympiad.paper
         temp_images = TempImages.objects.filter(paper = paper)
-        questions = paper.assigned_questions.all()
-        return render(request,"olympiad_management/olymp_ques_list.html", context = {"qus_obj": questions, "olymp_id": olympiad.id, "temp_images": temp_images})
+        questions = paper.assigned_questions.all().order_by("id")
+        return render(request,"olympiad_management/olymp_ques_list.html", context = {"qus_obj": questions, "olymp_id": olympiad.id, "temp_images": temp_images, "breadcrumb": paper.title})
 
     def post(self,request, *args, **kwargs):
         if request.POST.get("action") == "delete":
@@ -1410,11 +1489,19 @@ class OlympiadManagementQuestionList(View):
             obj = Questions.objects.get(id=request.POST.get("objId"))
             obj.delete()
             to_return = {
-                        "title":"Deleted",
-                        "icon":"success",
-                    }
+                "title":"Deleted",
+                "icon":"success",
+            }
             return JsonResponse(to_return,safe=True,)
-        
+        elif request.POST.get("action") == "bulk_delete":
+            try:
+                ids_lst = request.POST.getlist('question[]')
+                for ques_id in ids_lst:
+                    question = Questions.objects.get(id = ques_id)
+                    question.delete()
+                return redirect(request.get_full_path())
+            except:
+                return redirect(request.get_full_path())
         elif request.POST.get("action") == "bulk-questions":
             try:
                 olympiad_id = kwargs.get("id")
@@ -1424,12 +1511,12 @@ class OlympiadManagementQuestionList(View):
                 df = pd.read_csv (request.FILES["file"])
                 for i in df.iterrows():
                     section = i[1].section
-                    print(section)
                     if str(i[1].question) != "nan":
-                        time_limit = i[1].time_dutation.split(":")
+                        time_limit = i[1].time_duration.split(":")
                         SECONDS = int(time_limit[1])
                         MINUTES = int(time_limit[0])
                         section_time_limit = timedelta(seconds=SECONDS, minutes=MINUTES)
+                        answer = i[1].answer
                         qus_obj = Questions.objects.create(
                             section = section,
                             section_description = i[1].section_description,
@@ -1439,7 +1526,8 @@ class OlympiadManagementQuestionList(View):
                             option2 = i[1].optionB,
                             option3 = i[1].optionC,
                             option4 = i[1].optionD,
-                            correct_answer = i[1][i[1].answer],
+                            mark = i[1].mark,
+                            correct_answer = i[1][answer.strip()],
                         )
                         if "image" in i[1] and str(i[1].image) != "nan":
                             print(str(i[1].image))
@@ -1451,14 +1539,17 @@ class OlympiadManagementQuestionList(View):
                 to_return = {"status": "Success"}
                 return JsonResponse(to_return,safe=True)
             except:
-                to_return = {"status": "Success"}
-                return JsonResponse(to_return,safe=True)
+                raise BadRequest('Invalid file.')
         
-class OlympiadManagementEditQuestion(View):
+class OlympiadManagementEditQuestion(AdminOnlyMixin,View):
     def get(self, request, *args, **kwargs):
         olympiad = OlympiadExam.objects.get(id = kwargs["olymp_id"])
         question = Questions.objects.get(id = kwargs["ques_id"])
         paper_obj = olympiad.paper
+        if paper_obj.section_details:
+            SECTION_DETAILS = [json.loads(i) for i in paper_obj.section_details]
+        else:
+            SECTION_DETAILS = []
         seconds = question.section_time_limit
         print(question.section)
         if seconds != None:
@@ -1467,7 +1558,7 @@ class OlympiadManagementEditQuestion(View):
             TIME_LIMIT= f"{OUTCOME[1]}:{OUTCOME[2]}"
         else:
             TIME_LIMIT = None
-        return render(request, "olympiad_management/olymp_edit_ques.html", context = {"olymp_id": olympiad.id, "obj": question, "time_limit":TIME_LIMIT,})
+        return render(request, "olympiad_management/olymp_edit_ques.html", context = {"olymp_id": olympiad.id, "obj": question, "time_limit":TIME_LIMIT,"section_details":SECTION_DETAILS,})
     
     def post(self,request,*args, **kwargs):
         olympiad_obj = OlympiadExam.objects.get(id = kwargs.get("olymp_id"))
@@ -1480,6 +1571,7 @@ class OlympiadManagementEditQuestion(View):
             qus_obj.section = request.POST.get("section",qus_obj.section)
             qus_obj.section_description = request.POST.get("section_description",qus_obj.section_description)
             qus_obj.section_time_limit = section_time_limit if section_time_limit else qus_obj.section_time_limit
+            qus_obj.mark = request.POST.get("mark")
             qus_obj.question = request.POST.get("question",qus_obj.question)
             qus_obj.option1 = request.POST.get("option1",qus_obj.option1)
             qus_obj.option2 = request.POST.get("option2",qus_obj.option2)
@@ -1494,7 +1586,35 @@ class OlympiadManagementEditQuestion(View):
                 qus_obj.save()
         return redirect("admin_dashboard:olympiad_ques_list", id = kwargs["olymp_id"])
 
-class OlympiadManagementListExams(View):
+class DownloadDocumentAdminView(AdminOnlyMixin,View):
+    def get(self, request):
+        document_list = DownloadDocument.objects.all().order_by("-id")
+        context = {"documents":document_list}
+        return render(request, "download_document.html", context)
+    
+    def post(self, request):
+        if "delete_document" in request.POST:
+            document = DownloadDocument.objects.get(id = request.POST["delete_document"])
+            document.delete()
+        else:
+            title = request.POST["document_title"]
+            description = request.POST["document_description"]
+            if "document_id" in request.POST:
+                document = DownloadDocument.objects.get(id = request.POST["document_id"])
+                document.title = title
+                document.description = description
+                document.save()
+            else:
+                file = request.FILES["file"]
+
+                DownloadDocument.objects.create(
+                    title = title,
+                    description = description,
+                    file = file
+                )
+        return redirect("admin_dashboard:download_document")
+
+class OlympiadManagementListExams(AdminOnlyMixin,View):
     def get(self,request,*args, **kwargs):
         olymp_list = OlympiadExam.objects.all().order_by("exam_date")
         context = {
@@ -1514,25 +1634,35 @@ class OlympiadManagementListExams(View):
         elif request.POST.get("action") == "notification":
             olympiad = OlympiadExam.objects.get(id = request.POST.get("objId"))
             registrations = StudentPayments.objects.filter(olympiad_exam = olympiad)
-            registered_users = []
             for registration in registrations:
-                registered_users.append(registration.student.email)
-
-            if len(registered_users) >= 1:
+                
                 subject = f'Olympiad alert'
                 email_from = settings.EMAIL_HOST_USER
                 plaintext = get_template('email_templates/olympiad_notification.txt')
                 htmly     = get_template('email_templates/olympiad_notification.html')
 
+                content = """
+                    Dear Student,
+                    This is a reminder that the olympiad you have registered is scheduled for {date}, {time} Please take note of the following information carefully.
+                    Olympiad name: {title} <br/> Olympiad date: {date} <br/> Olympiad date: {time}
+                """
+
+                if MailContent.objects.filter(mail_for = "Olympiad Notification").exists():
+                    mail_obj = MailContent.objects.get(mail_for = "Olympiad Notification")
+                    if ("{title}" in mail_obj.content) and ("{date}" in mail_obj.content) and ("{time}" in mail_obj.content):
+                        content = mail_obj.content
+                    subject = mail_obj.subject
+                content = content.replace("{title}", olympiad.paper.title)
+                content = content.replace("{date}", str(olympiad.exam_date))
+                content = content.replace("{time}", str(olympiad.exam_time))
+
                 d = {
-                    'title': olympiad.paper.title,
-                    'date': olympiad.exam_date,
-                    'time': olympiad.exam_time,
+                    "content": content
                 }
 
                 text_content = plaintext.render(d)
                 html_content = htmly.render(d)
-                msg = EmailMultiAlternatives(subject, text_content, email_from, registered_users)
+                msg = EmailMultiAlternatives(subject, text_content, email_from, registration.student.email)
                 msg.attach_alternative(html_content, "text/html")
                 msg.send()
             to_return = {
@@ -1554,23 +1684,26 @@ class OlympiadManagementListExams(View):
             olymp_obj = OlympiadExam.objects.create(
                 exam_date = request.POST.get("exam_date"),
                 exam_time = request.POST.get("exam_time"),
+                meta_title = request.POST.get("meta_title"),
+                meta_description = request.POST.get("meta_description"),
+                meta_keywords = request.POST.get("meta_keywords"),
                 paper = paper_obj
             )
             return redirect("admin_dashboard:olympiad_ques_list",id=olymp_obj.id)
         
-class OlympiadRegistrations(View):
+class OlympiadRegistrations(AdminOnlyMixin,View):
     def get(self, request, *args, **kwargs):
         olympiad = OlympiadExam.objects.get(id = kwargs["id"])
         registrations = StudentPayments.objects.filter(olympiad_exam = olympiad)
-        return render(request, "olympiad_management/olymp_registrations.html", context = {"registrations": registrations})
+        return render(request, "olympiad_management/olymp_registrations.html", context = {"registrations": registrations, "breadcrumb": olympiad.paper.title})
         
-class OlympiadResults(View):
+class OlympiadResults(AdminOnlyMixin,View):
     def get(self, request, *args, **kwargs):
         olympiad = OlympiadExam.objects.get(id = kwargs["id"])
-        results = AttendedPapers.objects.filter(olympiad_exam=olympiad)
-        return render(request, "olympiad_management/olymp_results.html", context = {"results": results})
+        results = AttendedPapers.objects.filter(olympiad_exam=olympiad, is_deleted = False)
+        return render(request, "olympiad_management/olymp_results.html", context = {"results": results, "breadcrumb": olympiad.paper.title})
     
-class OlympiadBulkImageGenerateLink(View):
+class OlympiadBulkImageGenerateLink(AdminOnlyMixin,View):
     def post(self, request, *args, **kwargs):
         try:
             olympiad_id = kwargs["id"]
@@ -1579,7 +1712,169 @@ class OlympiadBulkImageGenerateLink(View):
             image = request.FILES["file"]
             img_obj = TempImages.objects.create(paper = paper, image = image)
             print(image)
-            to_return = {"link": img_obj.image.url}
+            to_return = {"link": img_obj.image.url} 
             return JsonResponse(to_return,safe=True)
         except:
             raise BadRequest('Invalid files.')
+    
+class HomeCounts(AdminOnlyMixin,View):
+    def post(self, request, *args, **kwargs):
+        print(request.POST)
+        if HomePageCounts.objects.all().exists():
+            counts = HomePageCounts.objects.all().first()
+        else:
+            counts = HomePageCounts.objects.create()
+        counts.visitors = request.POST["visitors"]
+        counts.registered_students = request.POST["registered_students"]
+        counts.exams_taken = request.POST["exams_taken"]
+        counts.olympiad_attempted = request.POST["olympiad_attempted"]
+        counts.save()
+        context = {"home_counts": {}}
+        context["home_counts"] = counts
+        return JsonResponse({"status": "Success"},safe=True,)
+
+class StudentAttendedPapers(AdminOnlyMixin, View):
+    def get(self, request):
+        students = CustomUser.objects.all().exclude(is_superuser=True).order_by("-id")
+        context = {"students":students}
+        return render(request, "student_attended_papers.html", context)
+
+class StudentAttendedPapersDeletedList(AdminOnlyMixin, View):
+    def get(self, request):
+        attended_papers = AttendedPapers.objects.filter(is_deleted = True).order_by("-deleted_on")
+        print(attended_papers)
+        context = {"attended_papers": attended_papers}
+        return render(request, "student_attended_papers_deleted.html", context)
+
+    def post(self, request, *args, **kwargs):
+        Paper_id = request.POST["attended_paper_id"]
+        attended_paper = AttendedPapers.objects.get(id = Paper_id)
+        if request.POST["action"] == "undo":
+            attended_paper.is_deleted = False
+            attended_paper.save()
+        else:
+            attended_paper.delete()
+        return redirect("admin_dashboard:student_attended_paper_deleted")
+
+class StudentAttendedPapersResult(AdminOnlyMixin, View):
+    def get(self, request, *args, **kwargs):
+        student = CustomUser.objects.get(id = kwargs["student_id"])
+        paper_type = request.GET.get("paper_type")
+        print(student)
+        print(paper_type)
+        attended_papers = []
+        if paper_type == "school":
+            paper_type_show = "School Exam"
+            attended_papers = AttendedPapers.objects.filter(student = student, competitive_exam__isnull=True, olympiad_exam__isnull = True, is_competitive = False, is_deleted = False).order_by("-id")
+        if paper_type == "competitive":
+            paper_type_show = "Competitive Exam"
+            attended_papers = AttendedPapers.objects.filter(
+                Q(competitive_exam__isnull=False)  | Q(is_competitive=True),student=student, is_deleted = False
+            ).order_by("-id")
+        if paper_type == "olympiad":
+            paper_type_show = "Olympiad Exam"
+            attended_papers = AttendedPapers.objects.filter(student = student, olympiad_exam__isnull = False, is_deleted = False).order_by("-id")
+
+        context = {"attended_papers": attended_papers, "paper_type_show": paper_type_show}
+        return render(request, "student_attended_papers_result.html", context)
+    
+    def post(self, request, *args, **kwargs):
+        paper_type = request.GET.get("paper_type")
+        Paper_id = request.POST["attended_paper_id"]
+        student_id = kwargs["student_id"]
+        attended_paper = AttendedPapers.objects.get(id = Paper_id)
+        attended_paper.is_deleted = True
+        attended_paper.deleted_on = timezone.now()
+        attended_paper.save()
+        redirect_url = reverse("admin_dashboard:student_attended_paper_result", kwargs={"student_id": student_id})
+        return redirect(f"{redirect_url}?paper_type={paper_type}")
+
+
+class MailContentAddView(AdminOnlyMixin,View):
+    def get(self,request):
+        mail_for = []
+        for choice in MailContent.MAIL_FOR_CHOICES:
+            mail_for.append(choice[0])
+
+        print(mail_for)
+        return render(request,"email_content/add_content.html", context = {"mail_for": mail_for})
+
+    def post(self, request):
+        mail_for = request.POST.get("email_for")
+        subject = request.POST.get("subject")
+        content = request.POST.get("content")
+        if MailContent.objects.filter(mail_for = mail_for).exists():
+            mail_obj = MailContent.objects.get(mail_for = mail_for)
+        else:
+            mail_obj = MailContent.objects.create(mail_for = mail_for)
+
+        mail_obj.subject = subject
+        mail_obj.content = content
+        mail_obj.save()
+        return redirect("admin_dashboard:email-content-list")
+
+class MailContentEditView(AdminOnlyMixin,View):
+    def get(self, request, *args, **kwargs):
+        mail_obj = MailContent.objects.get(id = kwargs["id"])
+        mail_for = []
+        for choice in MailContent.MAIL_FOR_CHOICES:
+            mail_for.append(choice[0])
+
+        selected_mail_for = mail_obj.mail_for
+        subject = mail_obj.subject
+        content = mail_obj.content
+
+        return render(request,"email_content/edit_content.html", context = {"mail_for": mail_for, "subject": subject, "content": content, "selected_mail_for": selected_mail_for})
+
+    def post(self, request, *args, **kwargs):
+        mail_obj = MailContent.objects.get(id = kwargs["id"])
+        mail_for = request.POST.get("email_for")
+        subject = request.POST.get("subject")
+        content = request.POST.get("content")
+        mail_obj.subject = subject
+        mail_obj.content = content
+        mail_obj.save()
+        return redirect("admin_dashboard:email-content-list")
+
+class MailContentView(AdminOnlyMixin,View):
+    def get(self, request):
+        mail_contents = MailContent.objects.all()
+        mail_for = []
+        for choice in MailContent.MAIL_FOR_CHOICES:
+            mail_for.append(choice[0])
+        return render(request, "email_content/content_list.html", context = {"mail_for": mail_for, "mail_contents": mail_contents})
+    def post(self, request):
+        MailContent.objects.get(id = request.POST["objId"]).delete()
+        to_return = {
+                        "title":"Deleted",
+                        "icon":"success",
+                    }
+        return JsonResponse(to_return,safe=True,)
+
+
+class PopupImageView(AdminOnlyMixin,View):
+    def get(self, request):
+        if PopupContent.objects.all().exists():
+            popup = PopupContent.objects.all().order_by("id").last()
+        else:
+            popup = PopupContent.objects.create()
+        return render(request, "admin_popup.html", context = {"popup": popup})
+    def post(self, request):
+        if PopupContent.objects.all().exists():
+            popup = PopupContent.objects.all().order_by("id").last()
+        else:
+            popup = PopupContent.objects.create()
+
+        popup.title = request.POST["title"]
+        popup.sub_title = request.POST["sub_title"]
+        popup.highlight_text = request.POST["highlight_text"]
+        popup.discount_title = request.POST["discount_title"]
+        popup.discount_percentage = request.POST["discount_percentage"]
+        popup.discount_description = request.POST["discount_description"]
+        popup.link = request.POST["link"]
+        if request.FILES.get("banner_image"):
+            popup.banner_image = request.FILES["banner_image"]
+
+        popup.save()
+
+        return redirect("admin_dashboard:admin-dashboard")

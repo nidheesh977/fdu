@@ -24,7 +24,10 @@ from utils.functions import OTP_Gen, is_ajax, str_to_timedelta
 
 from .models import *
 from django.core.exceptions import BadRequest
-
+import uuid  
+from phonepe.sdk.pg.payments.v1.models.request.pg_pay_request import PgPayRequest
+from phonepe.sdk.pg.payments.v1.payment_client import PhonePePaymentClient
+from phonepe.sdk.pg.env import Env
 
 class SignUpView(View):
     def get(self,request, *args, **kwargs):
@@ -84,15 +87,29 @@ class ForgetPassword(View):
                 if is_exists:
                     print("Send mail")
                     # FIXME -> send OTP
+                    content = """
+                        We have received a request to reset your password. Please enter the following OTP code to complete the password reset process:
+                        {otp}
+                        This OTP code is valid for a single login session or transaction and should not be shared with anyone. If you did not initiate this request, please ignore this email or contact our customer support team immediately.
+                        If you did initiate this request, please follow the instructions on our website to complete the password reset process.
+                        Thank you for choosing our service.
+                    """
+                    subject = "Firststepedu reset password OTP"
+                    if MailContent.objects.filter(mail_for = "Forgot password").exists():
+                        mail_obj = MailContent.objects.get(mail_for = "Forgot password")
+                        if "{otp}" in mail_obj.content:
+                            content = mail_obj.content
+                        subject = mail_obj.subject
                     generated_otp = OTP_Gen()
-                    subject = f'Firststepedu reset password OTP'
+                    content = content.replace("{otp}", generated_otp)
+                    subject = subject
                     email_from = settings.EMAIL_HOST_USER
                     recipient_list = [email]
                     plaintext = get_template('email_templates/otp.txt')
                     htmly     = get_template('email_templates/otp.html')
 
-                    d = { 
-                        'otp': generated_otp,
+                    d = {
+                        'content': content,
                     }
 
                     text_content = plaintext.render(d)
@@ -187,7 +204,7 @@ class IndexView(View):
         news=News.objects.all()[:6]
         blogs = Blogs.objects.all().order_by("created_on")[:3]
         testimonials = Testimonials.objects.all()[:6]
-        events = Events.objects.all().order_by("created_on")[:3]
+        events = Events.objects.filter(is_deleted = False).order_by("created_on")[:3]
         current_time = datetime.now()
         one_hour_after = current_time + timedelta(hours=1)
         context = {
@@ -206,35 +223,46 @@ class IndexView(View):
         context["registered_events"] = []
         if request.user.is_authenticated:
             context["registered_events"] = self.get_registeredEvents()
+            
+        if HomePageCounts.objects.all().exists():
+            context["home_counts"] = HomePageCounts.objects.all().first()
+        else:
+            context["home_counts"] = HomePageCounts.objects.create()
+        
         return render(request, "index.html",context)
     
     def post(self, request, *args, **kwargs):
         if request.POST.get("action") == "register":
             event = Events.objects.get(id = request.POST.get("eventId"))
-            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-            resp = client.order.create(
-                {"amount": float(event.event_fee) * 100, "currency": "INR", "payment_capture": "1"}
+            merchant_id = settings.PHONEPE_MERCHANT_ID
+            salt_key = settings.PHONEPE_SALT_KEY
+            salt_index = 1 # Updated with your Salt Index
+            # env = Env.UAT
+            env = Env.PROD 
+            should_publish_events = True
+            phonepe_client = PhonePePaymentClient(merchant_id, salt_key, salt_index, env, should_publish_events)
+
+            merchant_transaction_id = str(uuid.uuid4())
+            amount = float(event.event_fee) * 100
+            s2s_callback_url = settings.SITE_URL
+            print(s2s_callback_url)
+            ui_redirect_url = settings.SITE_URL + reverse("event_purchase_success",kwargs={"id":request.POST.get("eventId"), "uid": request.user.id, "payment_id": merchant_transaction_id})
+            pay_page_request = PgPayRequest.pay_page_pay_request_builder(
+                merchant_user_id=merchant_id,
+                merchant_transaction_id=merchant_transaction_id,
+                amount=int(amount),
+                callback_url=s2s_callback_url,  
+                redirect_url=ui_redirect_url
             )
-            callBackUrl = reverse("event-callback",kwargs={"id":request.POST.get("eventId"), "uid": request.user.id})
-            callBackUrl = request.build_absolute_uri(f"{callBackUrl}")
-            print(callBackUrl)
-            con = {
-                "razorpay_key": settings.RAZORPAY_KEY_ID,
-                "order_id": resp["id"],
-                "price":resp["amount"],
-                "callback_url":callBackUrl,
-            }
-            # eventId = request.POST.get("eventId")
-            # evnt = Events.objects.get(id=eventId)
-            # if not RegisterdEvents.objects.filter(student = request.user, event = evnt).exists():
-            #     obj = RegisterdEvents.objects.create(student = request.user, event = evnt)
-            # res = {"msg":"Event Registered"}
-            res = con
+            pay_page_response = phonepe_client.pay(pay_page_request)
+            print(pay_page_response)
+            print("Redirect")
+            return JsonResponse({"res_for": "payment", "url": pay_page_response.data.instrument_response.redirect_info.url})
         else:
             blog_count = request.POST.get("blogCount")
             start_num = int(blog_count)
             end_num = start_num + self.paginate_by
-            evnt = Events.objects.all().order_by("created_on")
+            evnt = Events.objects.filter(is_deleted = False).order_by("created_on")
             objs = evnt[start_num:end_num]
             data = serializers.serialize('json', objs, fields=("id","title","label","event_date","image","image_alt_name"))
             registerdEvents_ids = self.get_registeredEvents()
@@ -325,7 +353,7 @@ class Announcement(View):
 class DashboardResult(View):
     def get(self, request):
         user = request.user
-        attended_papers = AttendedPapers.objects.filter(student = user)
+        attended_papers = AttendedPapers.objects.filter(student = user, is_deleted = False).order_by("-id")
         print(attended_papers)
         context = {"attended_papers": attended_papers}
         return render(request, "result.html", context = context)
@@ -437,6 +465,70 @@ class OlympiadPage(View):
 
         return JsonResponse(toReturn)
 
+# class EventsPage(ListView):
+#     template_name = "events.html"
+#     model = Events
+#     # FIXME - > pagenated count.. for developement i just put 3  
+#     paginate_by = 3
+#     ordering = "created_on"
+
+#     def get_registeredEvents(self):
+#         try:
+#             events = []
+#             registerdEvents = RegisterdEvents.objects.filter(student = self.request.user)
+#             for i in registerdEvents:
+#                 events.append(i.event)
+#             return events
+#         except :
+#             events = []
+#             return events
+
+#     def get_context_data(self,**kwargs):
+#         context = super(EventsPage,self).get_context_data(**kwargs)
+#         context["registered_events"] = self.get_registeredEvents()
+#         context["show_loadmore"] = False
+#         if len(Events.objects.all()) > self.paginate_by:
+#             context["show_loadmore"] = True
+#         return context
+
+#     def post(self, request, *args, **kwargs):
+#         if request.POST.get("action") == "register":
+#             event = Events.objects.get(id = request.POST.get("eventId"))
+#             client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+#             resp = client.order.create(
+#                 {"amount": float(event.event_fee) * 100, "currency": "INR", "payment_capture": "1"}
+#             )
+#             callBackUrl = reverse("event-callback",kwargs={"id":request.POST.get("eventId"), "uid": request.user.id})
+#             callBackUrl = request.build_absolute_uri(f"{callBackUrl}")
+#             print(callBackUrl)
+#             con = {
+#                 "razorpay_key": settings.RAZORPAY_KEY_ID,
+#                 "order_id": resp["id"],
+#                 "price":resp["amount"],
+#                 "callback_url":callBackUrl,
+#             }
+#             # eventId = request.POST.get("eventId")
+#             # evnt = Events.objects.get(id=eventId)
+#             # if not RegisterdEvents.objects.filter(student = request.user, event = evnt).exists():
+#             #     obj = RegisterdEvents.objects.create(student = request.user, event = evnt)
+#             # res = {"msg":"Event Registered"}
+#             res = con
+#         else:
+#             blog_count = request.POST.get("blogCount")
+#             start_num = int(blog_count)
+#             end_num = start_num + self.paginate_by
+#             evnt = Events.objects.all().order_by("created_on")
+#             objs = evnt[start_num:end_num]
+#             data = serializers.serialize('json', objs, fields=("id","title","label","event_date","image","image_alt_name", "is_external", "event_meeting_link"))
+#             registerdEvents_ids = []
+#             for i in self.get_registeredEvents():
+#                 registerdEvents_ids.append(i.id)
+#             show_loadmore = False
+#             if len(evnt)>end_num:
+#                 show_loadmore = True
+#             res = {"data":data, "media_url":settings.MEDIA_URL,"registerdEvents_ids":registerdEvents_ids, "show_loadmore": show_loadmore}
+#         return JsonResponse(res)
+
 class EventsPage(ListView):
     template_name = "events.html"
     model = Events
@@ -459,26 +551,39 @@ class EventsPage(ListView):
         context = super(EventsPage,self).get_context_data(**kwargs)
         context["registered_events"] = self.get_registeredEvents()
         context["show_loadmore"] = False
-        if len(Events.objects.all()) > self.paginate_by:
+        if len(Events.objects.filter(is_deleted = False)) > self.paginate_by:
             context["show_loadmore"] = True
         return context
 
     def post(self, request, *args, **kwargs):
+        print("Reached")
         if request.POST.get("action") == "register":
+            print("Make payment")
             event = Events.objects.get(id = request.POST.get("eventId"))
-            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-            resp = client.order.create(
-                {"amount": float(event.event_fee) * 100, "currency": "INR", "payment_capture": "1"}
+            merchant_id = settings.PHONEPE_MERCHANT_ID
+            salt_key = settings.PHONEPE_SALT_KEY
+            salt_index = 1 # Updated with your Salt Index
+            # env = Env.UAT
+            env = Env.PROD
+            should_publish_events = True
+            phonepe_client = PhonePePaymentClient(merchant_id, salt_key, salt_index, env, should_publish_events)
+
+            merchant_transaction_id = str(uuid.uuid4())
+            amount = float(event.event_fee) * 100
+            s2s_callback_url = settings.SITE_URL
+            print(s2s_callback_url)
+            ui_redirect_url = settings.SITE_URL + reverse("event_purchase_success",kwargs={"id":request.POST.get("eventId"), "uid": request.user.id, "payment_id": merchant_transaction_id})
+            pay_page_request = PgPayRequest.pay_page_pay_request_builder(
+                merchant_user_id=merchant_id,
+                merchant_transaction_id=merchant_transaction_id,
+                amount=int(amount),
+                callback_url=s2s_callback_url,  
+                redirect_url=ui_redirect_url
             )
-            callBackUrl = reverse("event-callback",kwargs={"id":request.POST.get("eventId"), "uid": request.user.id})
-            callBackUrl = request.build_absolute_uri(f"{callBackUrl}")
-            print(callBackUrl)
-            con = {
-                "razorpay_key": settings.RAZORPAY_KEY_ID,
-                "order_id": resp["id"],
-                "price":resp["amount"],
-                "callback_url":callBackUrl,
-            }
+            pay_page_response = phonepe_client.pay(pay_page_request)
+            print(pay_page_response)
+            print("Redirect")
+            return JsonResponse({"res_for": "payment", "url": pay_page_response.data.instrument_response.redirect_info.url})
             # eventId = request.POST.get("eventId")
             # evnt = Events.objects.get(id=eventId)
             # if not RegisterdEvents.objects.filter(student = request.user, event = evnt).exists():
@@ -489,7 +594,7 @@ class EventsPage(ListView):
             blog_count = request.POST.get("blogCount")
             start_num = int(blog_count)
             end_num = start_num + self.paginate_by
-            evnt = Events.objects.all().order_by("created_on")
+            evnt = Events.objects.filter(is_deleted = False).order_by("created_on")
             objs = evnt[start_num:end_num]
             data = serializers.serialize('json', objs, fields=("id","title","label","event_date","image","image_alt_name", "is_external", "event_meeting_link"))
             registerdEvents_ids = []
@@ -527,8 +632,8 @@ class RegisterdEventsView(LoginRequiredMixin, View):
 
 class EnrolledClassesView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        board_exams = StudentPayments.objects.filter(student=request.user)
-        attended_exams = AttendedPapers.objects.filter(student =request.user, olympiad_exam__isnull = False)
+        board_exams = StudentPayments.objects.filter(student=request.user).order_by("-id")
+        attended_exams = AttendedPapers.objects.filter(student =request.user, olympiad_exam__isnull = False, is_deleted = False)
         attended_olympiads = []
         for i in attended_exams:
             attended_olympiads.append(i.olympiad_exam)
@@ -559,7 +664,7 @@ class ExamView(View):
         competitive_exam_id = request.GET.get("competitive-exam")
         paper_id = kwargs.get("id")
         paper_obj = get_object_or_404(Papers,id=paper_id)
-        questions = paper_obj.assigned_questions.all()
+        questions = paper_obj.assigned_questions.all().order_by("id")
 
         SECTION_DETAILS = []
         TOTAL_QUES = 0
@@ -576,11 +681,11 @@ class ExamView(View):
                 SECTION_DETAILS.append(to_dict)
                 
                 if count == 0:
-                    to_dict["section_questions_details"] = f"1 - {SECTION_QUES_COUNT}"
+                    to_dict["section_questions_details"] = f"{SECTION_QUES_COUNT} Questions"
                 else:
                     previous_dict = SECTION_DETAILS[count]
                     previous_el = SECTION_DETAILS[count-1]["questions_count"]
-                    previous_dict["section_questions_details"] = f"{previous_el+1} - {previous_el+SECTION_QUES_COUNT}"
+                    previous_dict["section_questions_details"] = f"{SECTION_QUES_COUNT} Questions"
                 ALL_QUES.extend(section_questions)
         TOTAL_TIME =sum([ques.section_time_limit for ques in ALL_QUES],timedelta(0,0))
         TIME_IN_MIN = TOTAL_TIME.total_seconds()/60
@@ -589,13 +694,13 @@ class ExamView(View):
             class_obj = get_object_or_404(Classes,id=class_id)
             subject_obj = get_object_or_404(Subjects,id=subject_id)
             context = {
-            "class_obj":class_obj,
-            "subject_obj":subject_obj,
-            "paper_obj":paper_obj,
-            "section_details":SECTION_DETAILS,
-            "total_ques":TOTAL_QUES,
-            "all_ques":ALL_QUES,
-            "tot_time":TIME_IN_MIN,
+                "class_obj":class_obj,
+                "subject_obj":subject_obj,
+                "paper_obj":paper_obj,
+                "section_details":SECTION_DETAILS,
+                "total_ques":TOTAL_QUES,
+                "all_ques":ALL_QUES,
+                "tot_time":TIME_IN_MIN,
             }
         elif not class_id and subject_id:
             subject_obj = get_object_or_404(Subjects,id=subject_id)
@@ -650,9 +755,12 @@ class ExamView(View):
         subject_id = request.GET.get("subject")
         competitive_exam_id = request.GET.get("competitive-exam")
         olympiad_id = request.GET.get("olympiad_id")
+        is_competitive = False
+        if request.GET.get("is_competitive"):
+            is_competitive = True
         paper_id = kwargs.get("id")
         paper_obj = get_object_or_404(Papers,id=paper_id)
-        questions = paper_obj.assigned_questions.all()
+        questions = paper_obj.assigned_questions.all().order_by("id")
         if request.GET.get("obj_id"):
             student_payment = get_object_or_404(StudentPayments,id=request.GET.get("obj_id"))
         if request.POST.get("action") == "getQues":
@@ -661,6 +769,8 @@ class ExamView(View):
             time_limit = question_obj.section_time_limit.total_seconds()
             to_return = {
                 "question":question_obj.question,
+                "section_description": question_obj.section_description,
+                "mark":question_obj.mark,
                 "option1":question_obj.option1,
                 "option2":question_obj.option2,
                 "option3":question_obj.option3,
@@ -686,6 +796,7 @@ class ExamView(View):
                         competitive_exam = competitive_exam,
                         paper = paper_obj,
                         correct_answers = 0,
+                        total_mark = 0,
                         attend_date = datetime.now().date(),
                     )
             elif class_id:
@@ -694,22 +805,29 @@ class ExamView(View):
                         class_obj = Classes.objects.get(id = class_id),
                         paper = paper_obj,
                         correct_answers = 0,
+                        total_mark = 0,
                         attend_date = datetime.now().date(),
                     )
             elif olympiad_id:
                 olympiad_exam = OlympiadExam.objects.get(id = olympiad_id)
-                attend_paper_obj = AttendedPapers.objects.create(
-                    student = request.user,
-                    paper = paper_obj,
-                    olympiad_exam = olympiad_exam,
-                    correct_answers = 0,
-                    attend_date = datetime.now().date(),
-                )
+                if AttendedPapers.objects.filter(student = request.user).filter(olympiad_exam = olympiad_exam, is_deleted = False).exists():
+                    REDIRECT_URL = request.build_absolute_uri(reverse('application:enrolled_classes'))
+                    return JsonResponse({"redirect_url":REDIRECT_URL})
+                else:
+                    attend_paper_obj = AttendedPapers.objects.create(
+                        student = request.user,
+                        paper = paper_obj,
+                        olympiad_exam = olympiad_exam,
+                        correct_answers = 0,
+                        total_mark = 0,
+                        attend_date = datetime.now().date(),
+                    )
             else:
                 attend_paper_obj = AttendedPapers.objects.create(
                         student = request.user,
                         paper = paper_obj,
                         correct_answers = 0,
+                        total_mark = 0,
                         attend_date = datetime.now().date(),
                     )
                 if request.GET.get("obj_id"):
@@ -740,10 +858,12 @@ class ExamView(View):
                 attend_paper_obj.attended_questions.add(obj)
                 if is_correct_ans:
                     attend_paper_obj.correct_answers = attend_paper_obj.correct_answers+1
+                    attend_paper_obj.total_mark = attend_paper_obj.total_mark + question_obj.mark
                     attend_paper_obj.save()
             
             # BUG: -> needs to mark it that the student is completed this paper.
-
+            attend_paper_obj.is_competitive = is_competitive
+            attend_paper_obj.save()
             REDIRECT_URL = request.build_absolute_uri(reverse('application:enrolled_classes'))
             return JsonResponse({"redirect_url":REDIRECT_URL})
         return JsonResponse({})
@@ -835,6 +955,7 @@ class SchoolPageWise(LoginRequiredMixin, View):
             for d in data:
                 listOfQuerySet.extend(d.assigned_papers.all())
             context = {
+                "class_id": classId,
                 "subject_id":subjectId,
                 "papers":listOfQuerySet,
                 "testimonials":testimonials,
@@ -943,82 +1064,145 @@ class Checkout(LoginRequiredMixin, View):
         }
         return render(request,"checkout.html",context)
 
+# class MakePayment(LoginRequiredMixin,View):
+#     def get(self, request, *args, **kwargs):
+#         forWhat = request.GET.get("type")
+#         client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+#         match forWhat:
+#             case "class":
+#                 obj = Classes.objects.get(id=kwargs.get("id"))
+#                 if StudentPayments.objects.filter(student = request.user, classes = Classes.objects.get(id = kwargs.get("id"))).exists():
+#                     resp = client.order.create(
+#                         {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#                 else:
+#                     resp = client.order.create(
+#                         {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#             case "subject":
+#                 obj = Subjects.objects.get(id=kwargs.get("id"))
+#                 if StudentPayments.objects.filter(student = request.user, subjects = Subjects.objects.get(id = kwargs.get("id"))).exists():
+#                     resp = client.order.create(
+#                         {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#                 else:
+#                     resp = client.order.create(
+#                         {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#             case "paper":
+#                 obj = Papers.objects.get(id=kwargs.get("id"))
+#                 if StudentPayments.objects.filter(student = request.user, papers = Papers.objects.get(id = kwargs.get("id"))).exists():
+#                     resp = client.order.create(
+#                         {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#                 else:
+#                     resp = client.order.create(
+#                         {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#             case "competitive-exam":
+#                 obj = CompetitiveExam.objects.get(id=kwargs.get("id"))
+#                 if StudentPayments.objects.filter(student = request.user, competitive_exam = CompetitiveExam.objects.get(id = kwargs.get("id"))).exists():
+#                     resp = client.order.create(
+#                         {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#                 else:
+#                     resp = client.order.create(
+#                         {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#             case "competitive-paper":
+#                 obj = Papers.objects.get(id=kwargs.get("id"))
+#                 if StudentPayments.objects.filter(student = request.user, competitive_paper = Papers.objects.get(id = kwargs.get("id"))).exists():
+#                     resp = client.order.create(
+#                         {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#                 else:
+#                     resp = client.order.create(
+#                         {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
+#                     )
+#             case "olympiad-exam":
+#                 obj = OlympiadExam.objects.get(id=kwargs.get("id"))
+#                 resp = client.order.create(
+#                     {"amount": float(obj.paper.price) * 100, "currency": "INR", "payment_capture": "1"}
+#                 )
+#             case _:
+#                 return redirect("application:index-page")
+            
+
+#         callBackUrl = reverse("callback",kwargs={"id":obj.id,"uid":request.user.id})
+#         callBackUrl = request.build_absolute_uri(f"{callBackUrl}?type={forWhat}")
+#         print(callBackUrl)
+#         con = {
+#             "callback_url":callBackUrl,
+#             "objId":obj.id,
+#             "razorpay_key": settings.RAZORPAY_KEY_ID,
+#             "order_id": resp["id"],
+#             "price":resp["amount"]
+#             }
+#         return render(request,"payment.html",con)
 class MakePayment(LoginRequiredMixin,View):
     def get(self, request, *args, **kwargs):
+        print("Make payment")
         forWhat = request.GET.get("type")
-        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+        merchant_id = settings.PHONEPE_MERCHANT_ID
+        salt_key = settings.PHONEPE_SALT_KEY
+        salt_index = 1 # Updated with your Salt Index
+        # env = Env.UAT
+        env = Env.PROD 
+        should_publish_events = True
+        phonepe_client = PhonePePaymentClient(merchant_id, salt_key, salt_index, env, should_publish_events)
+
+        merchant_transaction_id = str(uuid.uuid4())
+        amount = 100
         match forWhat:
             case "class":
                 obj = Classes.objects.get(id=kwargs.get("id"))
                 if StudentPayments.objects.filter(student = request.user, classes = Classes.objects.get(id = kwargs.get("id"))).exists():
-                    resp = client.order.create(
-                        {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.repay_price) * 100
                 else:
-                    resp = client.order.create(
-                        {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.price) * 100
             case "subject":
                 obj = Subjects.objects.get(id=kwargs.get("id"))
                 if StudentPayments.objects.filter(student = request.user, subjects = Subjects.objects.get(id = kwargs.get("id"))).exists():
-                    resp = client.order.create(
-                        {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.repay_price) * 100
                 else:
-                    resp = client.order.create(
-                        {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.price) * 100
             case "paper":
                 obj = Papers.objects.get(id=kwargs.get("id"))
                 if StudentPayments.objects.filter(student = request.user, papers = Papers.objects.get(id = kwargs.get("id"))).exists():
-                    resp = client.order.create(
-                        {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.repay_price) * 100
                 else:
-                    resp = client.order.create(
-                        {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.repay_price) * 100
             case "competitive-exam":
                 obj = CompetitiveExam.objects.get(id=kwargs.get("id"))
                 if StudentPayments.objects.filter(student = request.user, competitive_exam = CompetitiveExam.objects.get(id = kwargs.get("id"))).exists():
-                    resp = client.order.create(
-                        {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.repay_price) * 100
                 else:
-                    resp = client.order.create(
-                        {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.price) * 100
             case "competitive-paper":
                 obj = Papers.objects.get(id=kwargs.get("id"))
                 if StudentPayments.objects.filter(student = request.user, competitive_paper = Papers.objects.get(id = kwargs.get("id"))).exists():
-                    resp = client.order.create(
-                        {"amount": float(obj.repay_price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.repay_price) * 100
                 else:
-                    resp = client.order.create(
-                        {"amount": float(obj.price) * 100, "currency": "INR", "payment_capture": "1"}
-                    )
+                    amount = float(obj.price) * 100
             case "olympiad-exam":
                 obj = OlympiadExam.objects.get(id=kwargs.get("id"))
-                resp = client.order.create(
-                    {"amount": float(obj.paper.price) * 100, "currency": "INR", "payment_capture": "1"}
-                )
+                amount = float(obj.paper.price) * 100
             case _:
                 return redirect("application:index-page")
-            
+        s2s_callback_url = settings.SITE_URL
+        print(s2s_callback_url)
+        ui_redirect_url = settings.SITE_URL + reverse("exam_purchase_success",kwargs={"id":kwargs.get("id"), "type": forWhat, "uid": request.user.id, "payment_id": merchant_transaction_id})
 
-        callBackUrl = reverse("callback",kwargs={"id":obj.id,"uid":request.user.id})
-        callBackUrl = request.build_absolute_uri(f"{callBackUrl}?type={forWhat}")
-        print(callBackUrl)
-        con = {
-            "callback_url":callBackUrl,
-            "objId":obj.id,
-            "razorpay_key": settings.RAZORPAY_KEY_ID,
-            "order_id": resp["id"],
-            "price":resp["amount"]
-            }
-        return render(request,"payment.html",con)
-
+        pay_page_request = PgPayRequest.pay_page_pay_request_builder(
+            merchant_user_id=merchant_id,
+            merchant_transaction_id=merchant_transaction_id,
+            amount=int(amount),
+            callback_url=s2s_callback_url,  
+            redirect_url=ui_redirect_url
+        )
+        pay_page_response = phonepe_client.pay(pay_page_request)
+        print(pay_page_response)
+        return redirect(pay_page_response.data.instrument_response.redirect_info.url)
 
 @csrf_exempt
 def callback(request,*args, **kwargs):
@@ -1130,14 +1314,27 @@ def callback(request,*args, **kwargs):
             subject = f'Firststepedu payment success'
             email_from = settings.EMAIL_HOST_USER
             recipient_list = [user.email]
-            print(recipient_list)
             plaintext = get_template('email_templates/payment_success.txt')
             htmly     = get_template('email_templates/payment_success.html')
 
-            d = { 
-                'obj_type': fromWhere,
-                "title": obj_title,
-                "amount": price,
+            content = """
+                Thank you for purchasing "{title}"
+                We are writing to inform you that your recent payment of &#8377;{amount} for {obj_type} - {title} has been successfully processed. We appreciate and thank you for choosing our service.
+                If you have any questions or concerns regarding this payment, please do not hesitate to contact our customer support team.
+                Thank you again for choosing our service.
+            """
+            if MailContent.objects.filter(mail_for = "Payment success").exists():
+                mail_obj = MailContent.objects.get(mail_for = "Payment success")
+                if ("{title}" in mail_obj.content) and ("{amount}" in mail_obj.content) and ("{obj_type}" in mail_obj.content):
+                    content = mail_obj.content
+                subject = mail_obj.subject
+
+            content = content.replace("{title}", obj_title)
+            content = content.replace("{amount}", str(price))
+            content = content.replace("{obj_type}", fromWhere)
+
+            d = {
+                'content': content
             }
 
             text_content = plaintext.render(d)
@@ -1169,31 +1366,230 @@ def callback(request,*args, **kwargs):
         redirectUrl = request.build_absolute_uri(f"{redirectUrl}?type={fromWhere}")
         messages.error(request, "Payment Failure")
         return redirect(redirectUrl)
+
+def exam_purchase_success(request, *args, **kwargs):
+    print("Reached")
+    try:
+        ObjId = kwargs.get("id")
+        fromWhere = kwargs.get("type")
+        order_id = 1
+        payment_id = kwargs.get("payment_id")
+        signature_id = 1
+        # fromWhere variable is used to find the obj that where its coming from.
+        # if the payment is for class that it should add to classes field of StudentPayments model.
+
+        merchant_id = settings.PHONEPE_MERCHANT_ID
+        salt_key = settings.PHONEPE_SALT_KEY
+        salt_index = 1 # insert your salt index
+        # env = Env.UAT
+        env = Env.PROD 
+        should_publish_events = True
+        phonepe_client = PhonePePaymentClient(merchant_id, salt_key, salt_index, env, should_publish_events)
+
+        merchant_transaction_id = payment_id
+        response = phonepe_client.check_status(merchant_transaction_id)
+        print(response)
+        if response.code == "PAYMENT_SUCCESS":
+            user = CustomUser.objects.get(id=kwargs.get("uid"))
+            is_repay = False
+            match fromWhere:
+                case "class":
+                    obj = Classes.objects.get(id=ObjId)
+                    obj.purchase_count = obj.purchase_count+1
+                    obj.save()
+                    if StudentPayments.objects.filter(student = user, classes = obj).exists():
+                        is_repay = True
+                case "subject":
+                    obj = Subjects.objects.get(id=ObjId)
+                    if StudentPayments.objects.filter(student = user, subjects = obj).exists():
+                        is_repay = True
+                case "paper":
+                    obj = Papers.objects.get(id=ObjId)
+                    if StudentPayments.objects.filter(student = user, papers = obj).exists():
+                        is_repay = True
+                case "competitive-exam":
+                    obj = CompetitiveExam.objects.get(id=ObjId)
+                    obj.purchase_count = obj.purchase_count+1
+                    obj.save()
+                    if StudentPayments.objects.filter(student = user, competitive_exam = obj).exists():
+                        is_repay = True
+                case "competitive-paper":
+                    obj = Papers.objects.get(id=ObjId)
+                    if StudentPayments.objects.filter(student = user, competitive_paper = obj).exists():
+                        is_repay = True
+                case "olympiad-exam":
+                    obj = OlympiadExam.objects.get(id=ObjId)
+                    is_repay = False
+                case _:
+                    messages.error(request, "Payment Failure")
+                    return redirect("application:index-page")
+            if is_repay:
+                price = obj.repay_price
+                OBJ = StudentPayments.objects.create(
+                    student = user,
+                    order_id = order_id,
+                    payment_id = payment_id,
+                    signature_id = signature_id,
+                    price = obj.repay_price,
+                    enrolled_type=fromWhere, 
+                    is_repay = is_repay
+                )
+            elif fromWhere != "olympiad-exam":
+                price = obj.price
+                OBJ = StudentPayments.objects.create(
+                    student = user,
+                    order_id = order_id,
+                    payment_id = payment_id,
+                    signature_id = signature_id,
+                    price = obj.price,
+                    enrolled_type=fromWhere, 
+                    is_repay = is_repay
+                )
+            else:
+                price = obj.paper.price
+                OBJ = StudentPayments.objects.create(
+                    student = user,
+                    order_id = order_id,
+                    payment_id = payment_id,
+                    signature_id = signature_id,
+                    price = price,
+                    enrolled_type=fromWhere,
+                    is_repay = is_repay,
+                    olympiad_exam = obj
+                )
+
+            obj_title = ""
+            match fromWhere:
+                case "class":
+                    OBJ.classes = obj
+                case "subject":
+                    OBJ.subjects = obj
+                case "paper":
+                    OBJ.papers = obj
+                case "competitive-exam":
+                    OBJ.competitive_exam = obj
+                    obj_title = obj.exam_name
+                case "competitive-paper":
+                    OBJ.competitive_paper = obj
+                case "olympiad-exam":
+                    obj_title = obj.paper.title
+            if obj_title == "":
+                obj_title = obj.title
+            
+            OBJ.save()
+            subject = f'Firststepedu payment success'
+            email_from = settings.EMAIL_HOST_USER
+            recipient_list = [user.email]
+            print(recipient_list)
+            plaintext = get_template('email_templates/payment_success.txt')
+            htmly     = get_template('email_templates/payment_success.html')
+
+            content = """
+                Thank you for purchasing "{title}"
+                We are writing to inform you that your recent payment of &#8377;{amount} for {obj_type} - {title} has been successfully processed. We appreciate and thank you for choosing our service.
+                If you have any questions or concerns regarding this payment, please do not hesitate to contact our customer support team.
+                Thank you again for choosing our service.
+            """
+
+            if MailContent.objects.filter(mail_for = "Payment success").exists():
+                mail_obj = MailContent.objects.get(mail_for = "Payment success")
+                if ("{title}" in mail_obj.content) and ("{amount}" in mail_obj.content) and ("{obj_type}" in mail_obj.content):
+                    content = mail_obj.content
+                subject = mail_obj.subject
+
+            content = content.replace("{title}", obj_title)
+            content = content.replace("{amount}", str(price))
+            content = content.replace("{obj_type}", fromWhere)
+
+            d = {
+                'content': content
+            }
+
+            text_content = plaintext.render(d)
+            html_content = htmly.render(d)
+            msg = EmailMultiAlternatives(subject, text_content, email_from, recipient_list)
+            msg.attach_alternative(html_content, "text/html")
+            msg.send()
+            return redirect('application:enrolled_classes')
+        return redirect("application:school")
+    except:
+        return redirect("application:school")
     
 @csrf_exempt
 def eventcallback(request,*args, **kwargs):
-    def verify_signature(response_data):
-        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-        b = client.utility.verify_payment_signature(response_data)
-        return b
-     
-    # Success
-    if "razorpay_signature" in request.POST:
-        if verify_signature(request.POST):
-            event = Events.objects.get(id = kwargs["id"])
-            student = CustomUser.objects.get(id=kwargs["uid"])
-            RegisterdEvents.objects.create(student = student, event = event)
-            return redirect('application:registered_events')
-                
-    #  payment error
+    payment_id = kwargs.get("payment_id")
+    # fromWhere variable is used to find the obj that where its coming from.
+    # if the payment is for class that it should add to classes field of StudentPayments model.
+
+    merchant_id = settings.PHONEPE_MERCHANT_ID
+    salt_key = settings.PHONEPE_SALT_KEY
+    salt_index = 1 # insert your salt index
+    # env = Env.UAT
+    env = Env.PROD 
+    should_publish_events = True
+    phonepe_client = PhonePePaymentClient(merchant_id, salt_key, salt_index, env, should_publish_events)
+
+    merchant_transaction_id = payment_id
+    response = phonepe_client.check_status(merchant_transaction_id)
+    print(response)
+    if response.code == "PAYMENT_SUCCESS":
+        event = Events.objects.get(id = kwargs["id"])
+        student = CustomUser.objects.get(id=kwargs["uid"])
+        RegisterdEvents.objects.create(student = student, event = event)
+        return redirect('application:registered_events')
     else:
         redirectUrl = reverse("application:index-page")
         redirectUrl = request.build_absolute_uri(f"{redirectUrl}")
         messages.error(request, "Payment Failure")
         return redirect(redirectUrl)
+    
+def event_purchase_success(request,*args, **kwargs):
+    event = Events.objects.get(id = kwargs["id"])
+    student = CustomUser.objects.get(id=kwargs["uid"])
+    RegisterdEvents.objects.create(student = student, event = event)
+    subject = f'Firststepedu payment success'
+    email_from = settings.EMAIL_HOST_USER
+    recipient_list = [student.email]
+    print(recipient_list)
+    plaintext = get_template('email_templates/payment_success.txt')
+    htmly     = get_template('email_templates/payment_success.html')
+
+    content = """
+        Thank you for purchasing "{title}"
+        We are writing to inform you that your recent payment of &#8377;{amount} for {obj_type} - {title} has been successfully processed. We appreciate and thank you for choosing our service.
+        If you have any questions or concerns regarding this payment, please do not hesitate to contact our customer support team.
+        Thank you again for choosing our service.
+    """
+    if MailContent.objects.filter(mail_for = "Payment success").exists():
+        mail_obj = MailContent.objects.get(mail_for = "Payment success")
+        if ("{title}" in mail_obj.content) and ("{amount}" in mail_obj.content) and ("{obj_type}" in mail_obj.content):
+            content = mail_obj.content
+        subject = mail_obj.subject
+
+    content = content.replace("{title}", event.title)
+    content = content.replace("{amount}", str(event.event_fee))
+    content = content.replace("{obj_type}", "Event")
+
+    d = {
+        'content': content
+    }
+
+    text_content = plaintext.render(d)
+    html_content = htmly.render(d)
+    msg = EmailMultiAlternatives(subject, text_content, email_from, recipient_list)
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
+    return redirect('application:registered_events')
 
 class ImportanceOfExam(TemplateView):
     template_name="importance_of_exam.html"
 
 class TermsConditions(TemplateView):
     template_name="terms_conditions.html"
+
+class DownloadDocumentView(View):
+    def get(self, request):
+        documents = DownloadDocument.objects.all()
+        total_docs_count = len(documents)
+        context = {"documents": documents, "total_docs_count": total_docs_count}
+        return render(request, "download_docs.html", context)

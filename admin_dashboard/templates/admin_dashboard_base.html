@@ -1,5 +1,6 @@
 {% load static %}
 {% load custom_tags %}
+{% get_home_counts as home_counts %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -10,7 +11,15 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <title>First Step Edu</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TNXX7V6TTY"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
+    gtag('config', 'G-TNXX7V6TTY');
+    </script>
     <!-- Custom fonts for this template-->
     <link href="{% static 'vendor/fontawesome-free/css/all.min.css' %}" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
@@ -79,7 +88,9 @@
                 <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" href="{% url 'admin_dashboard:home-banner' %}">Home Banner</a>
+                        <a class="collapse-item" href="javascript:void(0);" data-toggle="modal" data-target="#homeCounts">Homepage counts</a>
                         <a class="collapse-item" href="{% url 'admin_dashboard:marquee' %}">Marquee Text</a>
+                        <a class="collapse-item" href="{% url 'admin_dashboard:popup-image-view' %}">Popup Image</a>
                     </div>
                 </div>
             </li>
@@ -100,6 +111,22 @@
                 <a class="nav-link" href="{% url 'admin_dashboard:olympiad_exams_list' %}">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Olympiad Management</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'admin_dashboard:download_document' %}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Downloadable Documents</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'admin_dashboard:student-attended-papers' %}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Attended papers</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'admin_dashboard:email-content-list' %}">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Email content list</span>
+                </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="{% url 'admin_dashboard:blogs-list' %}">
@@ -357,6 +384,42 @@
         </div>
     </div>
 
+    <div class="modal fade" id="homeCounts" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-dark" id="exampleModalLabel">Homepage counts</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form class="user row" id = "homeCountsForm" method="POST">
+                        {% csrf_token %}
+                        <div class="form-group col-12">
+                            <label>Visitors <span class="text-danger">*</span></label>
+                            <input type="number" name="visitors" id = "visitors" class="form-control form-control-user" required value = {{home_counts.visitors}}>
+                        </div>
+                        <div class="form-group col-12">
+                            <label>Registered Students<span class="text-danger">*</span></label>
+                            <input type="number" name="registered_students" id = "registered_students" class="form-control form-control-user" required value = {{home_counts.registered_students}}>
+                        </div>
+                        <div class="form-group col-12">
+                            <label>Exams Taken <span class="text-danger">*</span></label>
+                            <input name="exams_taken" id = "exams_taken" type="number" class="form-control form-control-user" required value = {{home_counts.exams_taken}}>
+                        </div>
+                        <div class="form-group col-12">
+                            <label>Olympiad Attempted <span class="text-danger">*</span></label>
+                            <input name="olympiad_attempted" id = "olympiad_attempted" type="number" class="form-control form-control-user" required value = {{home_counts.olympiad_attempted}}>
+                        </div>
+                        <div class="col-12 text-center pt-4">
+                            <input type="submit" class="btn-lg btn-primary border-0 bg-primary tex-white px-4">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>    
 
     <!-- Bootstrap core JavaScript-->
     <script src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
@@ -396,6 +459,33 @@
             (val2) ? val = val2 : $('#' + option).prop('checked', false);
             document.getElementById('correct-option').value = val;
         }
+
+        document.getElementById("homeCountsForm").addEventListener("submit", function(event){
+            event.preventDefault()
+            $.ajax({
+                type: 'post',
+                headers: {
+                    'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val()
+                },
+                url: "/admin/home-counts",
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    action:"retrieve",
+                    visitors: document.getElementById("visitors").value,
+                    registered_students: document.getElementById("registered_students").value,
+                    exams_taken: document.getElementById("exams_taken").value,
+                    olympiad_attempted: document.getElementById("olympiad_attempted").value,
+                },
+                dataType: 'json',
+                success: function (response) {
+                    $('#homeCounts').modal('hide'); 
+                    alert("Updated Successfully")
+                },
+                error: function(response) {
+                   alert("Something Wrong");
+                }
+            });
+        });
     </script>
 </body>
 

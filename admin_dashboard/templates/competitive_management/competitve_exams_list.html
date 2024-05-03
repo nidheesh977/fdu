@@ -69,6 +69,18 @@
                         <label>Repay Price <span class="text-danger">*</span></label>
                         <input name="repay_price" type="number" class="form-control form-control-user" required>
                     </div>
+                    <div class="form-group col-12">
+                        <label>Meta Title <span class="text-danger">*</span></label>
+                        <input name="meta_title"  maxlength="50" type="text" class="form-control form-control-user" required>
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label>Meta Description <span class="text-danger">*</span></label>
+                        <textarea name="meta_description" rows="1" class="form-control form-control-user" required></textarea>
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label>Meta Keywords <span class="text-danger">*</span></label>
+                        <textarea name="meta_keywords" rows="1" class="form-control form-control-user" required></textarea>
+                    </div>
                     <!--<div class="form-group col-12">
                         <label>General Instructions <span class="text-danger">*</span></label>
                         <div>
@@ -89,7 +101,7 @@
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-dark" id="exampleModalLabel">Create Paper</h5>
+                <h5 class="modal-title text-dark" id="exampleModalLabel">Edit Paper</h5>
                 <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">×</span>
                 </button>
@@ -112,6 +124,18 @@
                     <div class="form-group col-12">
                         <label>Repay Price <span class="text-danger">*</span></label>
                         <input name="repay_price" id="repay_price"  type="number" class="form-control form-control-user" required>
+                    </div>
+                    <div class="form-group col-12">
+                        <label>Meta Title <span class="text-danger">*</span></label>
+                        <input name="meta_title" id="meta_title"  maxlength="50" type="text" class="form-control form-control-user" required>
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label>Meta Description <span class="text-danger">*</span></label>
+                        <textarea name="meta_description"  id="meta_description"  rows="1" class="form-control form-control-user" required></textarea>
+                    </div>
+                    <div class="form-group col-sm-6">
+                        <label>Meta Keywords <span class="text-danger">*</span></label>
+                        <textarea name="meta_keywords" id="meta_keywords" rows="1" class="form-control form-control-user" required></textarea>
                     </div>
 
                     <input type="hidden" id="idValue" name="id">
@@ -227,7 +251,9 @@
                 $("#exam_description").text(response["obj"]["description"]);
                 $("#exam_price").val(response["obj"]["price"]);
                 $("#repay_price").val(response["obj"]["repay_price"]);
-        
+                $("#meta_title").val(response["obj"]["meta_title"]);
+                $("#meta_description").text(response["obj"]["meta_description"]);
+                $("#meta_keywords").text(response["obj"]["meta_keywords"]);
             
                 $("#idValue").val(response["obj"]["id"]);
                 $('#examEdit').modal('show'); 

@@ -1,0 +1,33 @@
+{% extends 'application_base.html' %}
+{% load static %}
+{% block content %}
+<section class="section_blog-banner py-4 py-sm-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 align-self-center ">
+                <h2 class="test-bold fs-40 font-size cl-darkblue">Download documents</h2>
+            </div>
+            <div class="col-lg-6 about-banner text-lg-right text-center">
+                <img src="assets\images\olympaid-banner.png" alt="" class="img-fluid">
+            </div>
+        </div>
+    </div>
+    <section class = "container pt-3 pb-4">
+        {% if documents|length == 0 %}
+            <h3 style = "color: #c5c5c5; width: 100%;">No Documents.</h3>
+        {% endif %}
+        <div class = "row">
+            {% for document in documents %}
+                <div class = "col-6 col-md-4 pb-2 mb-md-2">
+                    <div class = "doc-container bgs-lightblue" style = "height: 100%; position: relative">
+                        <h3>{{document.title}}</h3>
+                        <p class = "doc-description text-secondary" style = "margin-bottom: 50px">{{document.description}}</p>
+                        <a href = "{{document.file.url}}" class = "btn btn-warning" download="" style = "position: absolute; bottom: 15px; left: 15px; background-color: #ffcb08;">Download</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+
+{% endblock %}

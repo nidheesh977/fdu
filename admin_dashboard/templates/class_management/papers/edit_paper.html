@@ -30,6 +30,10 @@
                 <label>Price<span class="text-danger">*</span></label>
                 <input value="{{obj.price}}" id="duration-input" class="form-control form-control-user" name="price" type="number" required>
             </div>
+            <div class="form-group col-sm-12">
+                <label>Repay Price<span class="text-danger">*</span></label>
+                <input value="{{obj.repay_price}}" id="duration-input" class="form-control form-control-user" name="repay_price" type="number" required>
+            </div>
             <div class="form-group col-12">
                 <label>Paper Description <span class="text-danger">*</span></label>
                 <textarea name="paper_description" rows="2" class="form-control form-control-user" required>{{obj.description}}</textarea>
@@ -42,7 +46,7 @@
                         <div class="row items">
                             <div class="form-group col-5">
                                 <label>Section Name <span class="text-danger">*</span></label>
-                                <input name="section_name" value="{{data.name}}" maxlength="20" type="text" class="form-control form-control-user" required>
+                                <input name="section_name" value="{{data.name}}" maxlength="200" type="text" class="form-control form-control-user" required>
                             </div>
                             <div class="form-group col-5">
                                 <label>Section Description <span class="text-danger">*</span></label>
@@ -59,11 +63,11 @@
                     <div class="row items">
                         <div class="form-group col-5">
                             <label>Section Name <span class="text-danger">*</span></label>
-                            <input name="section_name" value="{{data.name}}" maxlength="20" type="text" class="form-control form-control-user" required>
+                            <input name="section_name" value="{{data.name}}" maxlength="200" type="text" class="form-control form-control-user" required>
                         </div>
-                        <div class="form-group col-5">
+                        <div class="form-group col-5" style = "visibility: hidden; height: 10px">
                             <label>Section Description <span class="text-danger">*</span></label>
-                            <textarea name="section_description" id="meta_keywords" rows="1" class="form-control form-control-user" required>{{data.description}}</textarea>
+                            <textarea name="section_description" id="meta_keywords" rows="1" class="form-control form-control-user" required>Section description</textarea>
                         </div>
                         
                             <a href="#" class="addmore">Add More</a>
@@ -124,7 +128,7 @@
             <div class="row items">       
                 <div class="form-group col-5">
                     <label>Section Name <span class="text-danger">*</span></label>
-                    <input name="section_name" maxlength="20" type="text" class="form-control form-control-user" required>
+                    <input name="section_name" maxlength="200" type="text" class="form-control form-control-user" required>
                 </div>
                 <div class="form-group col-5">
                     <label>Section Description <span class="text-danger">*</span></label>

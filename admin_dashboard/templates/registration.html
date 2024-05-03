@@ -1,5 +1,10 @@
 {% extends 'admin_dashboard_base.html' %}
 {% block content %}
+<style>
+    td{
+        white-space: nowrap;
+    }
+</style>
 <div class="container-fluid">
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-sm-flex align-items-center justify-content-between">
@@ -13,11 +18,13 @@
                             <th>S.No</th>
                             <th>Name</th>
                             <th>Email</th>
+                            <th>Phone</th>
                             <th>Class</th>
                             <th>School</th>
                             <th>Country</th>
                             <th>City</th>
                             <th>Gender</th>
+                            <th>Date</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -27,11 +34,13 @@
                             <td>{{forloop.counter}}</td>
                             <td>{{obj.first_name}} {{obj.last_name}}</td>
                             <td>{{obj.email}}</td>
+                            <td>{{obj.mobile_number}}</td>
                             <td>{{obj.class_name}}</td>
                             <td>{{obj.school_name}}</td>
                             <td>{{obj.country}}</td>
                             <td>{{obj.city}}</td>
                             <td>{{obj.gender}}</td>
+                            <td>{{obj.created_on.date|date:"d/m/Y"}}</td>
                             <td><a href="/admin/user-payment-details/user-{{obj.id}}" class="d-inline-block btn btn-sm btn-success shadow-sm" >
                                 Payments
                               </a></td>

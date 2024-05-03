@@ -1,0 +1,167 @@
+{% extends 'admin_dashboard_base.html' %}
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-sm-flex align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Deleted papers</h6>
+            <a class="btn btn-warning btn-sm" href = "{% url 'admin_dashboard:student-attended-papers'%}">Back</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Paper</th>
+                            <th>Mark</th>
+                            <th>Deleted on</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attended_paper in attended_papers %}
+                        <!-- <div class="modal fade" id="paper{{attended_paper.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title text-dark" id="exampleModalLabel">{{attended_paper.paper.title}}</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% for submitted_answer in attended_paper.attended_questions.all %}
+                                            <h5 class = "question-title">{{forloop.counter}}. {{submitted_answer.question.question}}</p>
+                                            {% if submitted_answer.question.image %}
+                                                <img src = "{{submitted_answer.question.image.url}}" class = "question-img"/>
+                                            {% endif %}
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class = "question-option-container {% if submitted_answer.submitted_answer == submitted_answer.question.option1 %}
+                                                    {% if submitted_answer.submitted_answer == submitted_answer.question.correct_answer %}
+                                                active-correct
+                                            {% else %}
+                                                active-wrong
+                                            {% endif %}
+                                        {% endif %} {% if submitted_answer.question.correct_answer == submitted_answer.question.option1 %} question-correct-answer {% endif %}">
+                                        <div class = "option-marker-container">
+                                            <div></div>
+                                        </div>
+                                        <p class = "question-option">a. {{submitted_answer.question.option1}}</p>
+                                    </div>
+                                    
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class = "question-option-container {% if submitted_answer.submitted_answer == submitted_answer.question.option2 %}
+                                            {% if submitted_answer.submitted_answer == submitted_answer.question.correct_answer %}
+                                                        active-correct
+                                                    {% else %}
+                                                        active-wrong
+                                                    {% endif %}
+                                                {% endif %} {% if submitted_answer.question.correct_answer == submitted_answer.question.option2 %} question-correct-answer {% endif %}">
+                                                        <div class = "option-marker-container">
+                                                            <div></div>
+                                                        </div>
+                                                        <p class = "question-option">b. {{submitted_answer.question.option2}}</p>
+                                                    </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class = "question-option-container {% if submitted_answer.submitted_answer == submitted_answer.question.option3 %}
+                                            {% if submitted_answer.submitted_answer == submitted_answer.question.correct_answer %}
+                                                active-correct
+                                            {% else %}
+                                                active-wrong
+                                            {% endif %}
+                                        {% endif %} {% if submitted_answer.question.correct_answer == submitted_answer.question.option3 %} question-correct-answer {% endif %}">
+                                                <div class = "option-marker-container">
+                                                    <div></div>
+                                                </div>
+                                                <p class = "question-option">c. {{submitted_answer.question.option3}}</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            
+                                            <div class = "question-option-container {% if submitted_answer.submitted_answer == submitted_answer.question.option4 %}
+                                            {% if submitted_answer.submitted_answer == submitted_answer.question.correct_answer %}
+                                                active-correct
+                                            {% else %}
+                                                active-wrong
+                                            {% endif %}
+                                        {% endif %} {% if submitted_answer.question.correct_answer == submitted_answer.question.option4 %} question-correct-answer {% endif %}">
+                                                <div class = "option-marker-container">
+                                                    <div></div>
+                                                </div>
+                                                <p class = "question-option">d. {{submitted_answer.question.option4}}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>  -->
+                        <tr>
+                            <td>{{forloop.counter}}</td>
+                            <td>{{attended_paper.paper.title}}</td>
+                            <td>{{attended_paper.marks}}</td>
+                            <td>{{attended_paper.deleted_on.date|date:"d/m/Y"}}</td>
+                            <td>
+                                    <!-- <a href="javascript:void(0);" data-toggle="modal" data-target="#paper{{attended_paper.id}}" class="d-inline-block btn btn-sm btn-warning shadow-sm" >
+                                        View
+                                      </a> -->
+                                    <button class="btn btn-sm btn-warning" data-toggle="modal" data-target="#attended_paper_{{attended_paper.id}}">Undo delete</button>
+                                    <button class="btn btn-sm btn-danger" data-toggle="modal" data-target="#attended_paper_delete_{{attended_paper.id}}">Delete</button>
+                            </td>
+                        </tr>
+                        <div class="modal fade" id="attended_paper_{{attended_paper.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-md" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title text-dark" id="exampleModalLabel">Undo delete confirmation</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Are you sure? You want to undo delete {{attended_paper.paper.title}}?</p>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input hidden = "true" value = "{{attended_paper.id}}" name = "attended_paper_id" />
+                                            <input hidden = "true" value = "undo" name = "action"  />
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal" aria-label="Close">Cancel</button>
+                                            <button class="btn btn-danger" type="submit">Confirm</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>        
+                        <div class="modal fade" id="attended_paper_delete_{{attended_paper.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-md" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title text-dark" id="exampleModalLabel">Delete confirmation</h5>
+                                        <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">×</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>Are you sure? You want to delete {{attended_paper.paper.title}}?</p>
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input hidden = "true" value = "{{attended_paper.id}}" name = "attended_paper_id" />
+                                            <input hidden = "true" value = "delete" name = "action"  />
+                                            <button class="btn btn-secondary" type="button" data-dismiss="modal" aria-label="Close">Cancel</button>
+                                            <button class="btn btn-danger" type="submit">Confirm</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>        
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

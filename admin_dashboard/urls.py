@@ -85,11 +85,20 @@ urlpatterns = [
     path("olympiad-add-question/olympiad-<str:id>", views.OlympiadManagementAddQuestion.as_view(), name = "olympiad_add_ques"),
     path("olympiad-edit-exam/olympiad-<str:id>", views.OlympiadManagementEditExam.as_view(), name = "olympiad_edit_exam"),
     path("olympiad-exams-list", views.OlympiadManagementListExams.as_view(), name = "olympiad_exams_list"),
+    path("download-document", views.DownloadDocumentAdminView.as_view(), name = "download_document"),
     path("olympiad-question-list/olympiad-<str:id>", views.OlympiadManagementQuestionList.as_view(), name = "olympiad_ques_list"),
     path("olympiad-question-list/olympiad-<str:id>/add-bulk-images", views.OlympiadBulkImageGenerateLink.as_view(),name="olympiad-bulk-images"),
     path("olympiad-edit-question/olympiad-<str:olymp_id>/question-<str:ques_id>", views.OlympiadManagementEditQuestion.as_view(), name = "olympiad_edit_ques"),
     path("olympiad-registrations/olympiad-<str:id>", views.OlympiadRegistrations.as_view(), name = "olympiad_registrations"),
     path("olympiad-result/olympiad-<str:id>", views.OlympiadResults.as_view(), name = "olympiad_result"),
+    path("home-counts", views.HomeCounts.as_view(), name = "home_counts"),
+    path("student-attended-papers", views.StudentAttendedPapers.as_view(), name = "student-attended-papers"),
+    path("student-attended-paper/student-<str:student_id>", views.StudentAttendedPapersResult.as_view(), name = "student_attended_paper_result"),
+    path("student_attended_paper_deleted", views.StudentAttendedPapersDeletedList.as_view(), name = "student_attended_paper_deleted"),
+    path("add-email-content", views.MailContentAddView.as_view(),name="add-email-content"),
+    path("edit-email-content/content-<str:id>", views.MailContentEditView.as_view(),name="edit-email-content"),
+    path("email-content-list", views.MailContentView.as_view(),name="email-content-list"),
+    path("popup-image-view", views.PopupImageView.as_view(),name="popup-image-view"),
 ]
 
 admin.autodiscover()

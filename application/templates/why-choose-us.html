@@ -1,12 +1,42 @@
 {% extends 'application_base.html' %}
 {% load static %}
+{% block metadetails %}
+    <title>Fast Calculation Test Online - First Edu</title>
+    <meta name="description" content="Improve your mathematical skills with our fast online calculation test! Use
+    the interactive First Edu platform to get quick effective practice. Improve your skills in
+    mental math to increase accuracy and computation speed. Give it a try now!">
+    <meta name="keywords" content="Fast Calculation Test Online, Online Practice Test Papers for CBSE, Online
+    Practice Test Papers for ICSE, Online Practice Test Papers for State Syllabus, CBSE
+    School Exam, CBSE Mock Test, Mock Test for CBSE, CBSE Maths Mock Test, CBSE
+    Maths Online Test, CBSE Online Test, CBSE Science Mock Test, CBSE Science
+    Online Test, CBSE Online Test, Online MCQ Test for CBSE Science, ICSE School
+    Exam, ICSE Mock Test, ICSE Mock Test, Mock Test ICSE, Online Mock Test for ICSE,
+    Mock Test ICSE, Online MCQ Test for English, Online MCQ Test for Hindi, Online MCQ
+    Test for Maths, Online MCQ Test for Social Science, English Olympiad Online Test,
+    Maths Olympiad Online Test, Maths Olympiad Mock Test, NSO Online Practice Test,
+    Online Aptitude Test, Online Test, Math MCQ Online Test, Online Test, Online
+    Competitive Exam, Online Test for Maths, Online Test for English, English Online Test,
+    Maths Online Test, Mock Test, Online Exam, Online Test English, Online Test Maths,
+    Online Test Science, Online MCQ Test for Science, Maths Test Online, Online Quiz,
+    Online Test Maths, Online Test Science, Social Science Online Test, SST Online Test,
+    Competitive Exams Online, English Grammar Online Test, English Online Test, English
+    Online Test, Maths MCQ Online Test, Maths Online Test, Maths Online Quiz, Maths
+    Test Online, NCERT Science Online Test, NCERT Online Test, NCERT Online Test
+    Science, NCERT Science Online Test, Online Math Test, Online Science Test, Online
+    English Grammar Test, Online Exam, Online Grammar Test, Online Maths Quiz, Online
+    Maths Quiz, Online MCQ Test, Online Aptitude Test, Speed Live Test, Spell Bee,
+    Vocabulary Live Test, Vocabulary Speed Test, School Exam Preparation, School
+    Exams, School Live Test, State Board School Exams, Calculation Practice, Maths
+    Calculation Practice, Fast Calculation Practice, Math Calculation Practice, Online Maths
+    Calculation Test, Maths Calculation Speed Test Online, Online Calculation Practice">
+    <link rel="canonical" href="https://firstedu.co.in/why-choose-us" />
+{% endblock metadetails %}
 {% block content %}
 <section class="section_contact-banner pt-3 pb-4 bgs-lightblue">
 <div class="container">
     <div class="row">
         <div class="col-lg-6  align-self-center ">
-            <h2 class="test-bold fs-40 font-size cl-darkblue">First Step Edutech<p class="cl-blue-1  fs-15 pt-4 right-padding"> is a unique concept where specifically designed exams are conducted online for continuous evaluation of the students. It prepares and make the students ready to handle any exams without getting scared and nervous.
-            Loreum Ipsum is simply dummy text of the printing and typesetting industry.</p> </h2>
+            <h2 class="test-bold fs-40 font-size cl-darkblue">FirstEdu<p class="cl-blue-1  fs-15 pt-4 right-padding"> is a unique concept where specifically designed exams are conducted online for continuous evaluation of the students. It prepares and make the students ready to handle any exams without getting scared and nervous.</p> </h2>
         </div>
         <div class="col-lg-6 about-banner text-lg-right text-center">
             <img src="{% static 'images\about-banner.png' %}" alt="" class="  img-fluid">
@@ -44,35 +74,7 @@
         </div> 
     </div>
 </section>
-<section class="section_home-student-say py-4 py-sm-5">
-    <div class="container py-3">
-        <div class="text-center">
-             <h2 class=" test-bold head-size fs-45 cl-black mb-3 mb-sm-4">What Students Say</h2>
-             <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-md-3 pt-1 student">Lorem ipsum dolor sit amet adipisicing
-                 elit. Commodi aut recusandae illo. Voluptatibus illo delectus totam earum
-                 quo unde provident exercitationem eligendi! provident exercitationem.</p>
-         </div>
-         <div class="review-slider owl-carousel owl-theme pt-lg-4">
-            {% for testiObj in testimonials %}
-            <div class="item row">
-                <div class="col-lg-2">
-                    <img src="{{testiObj.image.url}}" alt="{{testiObj.image_alt_name}}" class="mr-5 rounded-circle"
-                        style="width:78px;">
-                </div>
-                <div class="col-lg-10 double-quates">
-                    <h6 class="feedback-font  test-bold cl-black padding fs-18">{{testiObj.client_name}}</h6>
-                    <p class="fs-13 cl-dark mb-0">{{testiObj.client_role}}</p>
-                    <div class="quates-img">
-                        <img src="{% static 'images/double-qts.png' %}" alt="">
-                    </div>
-                    <p class="fs-14 cl-dark col-lg-10 pl-0 pr-0 pr-lg-4">{{testiObj.description}}</p>
-                </div>
-            </div>
-        {% endfor %}
 
-
-         </div>  
-    </div>
-</section> 
 {% endblock content %}
+
 

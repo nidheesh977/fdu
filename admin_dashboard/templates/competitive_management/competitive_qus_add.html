@@ -26,9 +26,9 @@
                 <label>Select Section <span class="text-danger">*</span></label>
                 <select name="section" class="form-select w-100" required>
                     <option disabled{% if not request.GET.section %} selected {% endif %}>Select Section</option>
-                    <option {% if request.GET.section == 'Section-A' %} selected {% endif %}value="Section-A">Section - A</option>
-                    <option {% if request.GET.section == 'Section-B' %} selected {% endif %}value="Section-B">Section - B</option>
-                    <option {% if request.GET.section == 'Section-C' %} selected {% endif %}value="Section-C">Section - C</option>
+                    {% for section_detail in section_details %}
+                        <option {% if request.GET.section == section_detail.name %} selected {% endif %}value="{{section_detail.name}}">{{section_detail.name}}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -46,6 +46,10 @@
             <div class="form-group col-12 col-md-6">
                 <label>Upload Image <span class="text-danger">Maximum image size is 2MB</span></label>
                 <input class="form-control form-control-lg" name="upload_image" type="file" accept="image/png, image/jpeg">
+            </div>
+            <div class="form-group col-12 col-md-6">
+                <label>Mark <span class="text-danger">*</span></label>
+                <input class="form-control form-control-lg" name="mark" type="number" >
             </div>
             <div class="form-group col-12">
                 <label>Options <span class="text-danger">*</span></label>

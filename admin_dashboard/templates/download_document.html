@@ -1,0 +1,142 @@
+{% extends 'admin_dashboard_base.html' %}
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-sm-flex align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Documents</h6>
+            <a href="javascript:void(0);" data-toggle="modal" data-target="#classAdd" class="d-inline-block btn btn-sm btn-primary shadow-sm"><i
+                    class="fas fa-plus fa-sm text-white-50"></i> Add Document</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>File</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in documents %}
+                            <tr>
+                                <td>{{forloop.counter}}</td>
+                                <td>{{document.title}}</td>
+                                <td>{{document.description}}</td>
+                                <td><a href="{{document.file.url}}" class="d-inline-block btn btn-sm btn-success shadow-sm" download >
+                                    Download
+                                </a></td>
+                                <td>
+                                    <a href="javascript:void(0);" onclick = "editDocument('{{document.id}}', '{{document.title}}', '{{document.description}}')" data-toggle="modal" data-target="#documentEdit" class="d-inline-block btn btn-sm btn-warning shadow-sm" >
+                                    Edit
+                                </a>
+                                <button class="btn btn-sm btn-danger" data-toggle="modal" data-target="#documentDelete{{document.id}}">Delete</button>
+                                </td>
+                            </tr>
+                            <div class="modal fade" id="documentDelete{{document.id}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-md" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title text-dark" id="exampleModalLabel">Delete confirmation</h5>
+                                            <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">×</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Are you sure? You want to delete {{document.title}}?</p>
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type = "text" name = "delete_document" value="{{document.id}}" hidden = "true" />
+                                                <button class="btn btn-secondary" type="button" data-dismiss="modal" aria-label="Close">Cancel</button>
+                                                <button class="btn btn-danger" type="submit">Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>                            
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="classAdd" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-dark" id="exampleModalLabel">Add document</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form class="user row" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="form-group col-12">
+                        <label>Document Title <span class="text-danger">*</span></label>
+                        <input type="text" maxlength="50" name="document_title" class="form-control form-control-user" required>
+                    </div>
+                    <div class="form-group col-12">
+                        <label>Document Description <span class="text-danger">*</span></label>
+                        <textarea rows="1"  name="document_description" class="form-control form-control-user" required></textarea>
+                    </div>
+                    <div class="form-group col-12">
+                        <label>File<span class="text-danger">*</span></label>
+                        <br />
+                        <input type="file" maxlength="50" name="file" required>
+                    </div>
+                    <div class="col-12 text-center pt-4">
+                        <input type="submit" class="btn-lg btn-primary border-0 bg-primary tex-white px-4">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 
+<div class="modal fade" id="documentEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-dark" id="exampleModalLabel">Edit document</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form class="user row" method="POST" >
+                    {% csrf_token %}
+                    <div class="form-group col-12">
+                        <label>Document Title <span class="text-danger">*</span></label>
+                        <input type="text" maxlength="50" name="document_title" class="form-control form-control-user" required id = "document_title">
+                    </div>
+                    <div class="form-group col-12">
+                        <label>Document Description <span class="text-danger">*</span></label>
+                        <textarea rows="1"  name="document_description" class="form-control form-control-user" required id = "document_description"></textarea>
+                    </div>
+                    <input type="text" maxlength="50" name="document_id" class="d-none" required id = "document_id">
+                    <div class="col-12 text-center pt-4">
+                        <input type="submit" class="btn-lg btn-primary border-0 bg-primary tex-white px-4">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 
+
+<script>
+    function editDocument(documentId, documentTitle, documentDescription){
+        document.getElementById("document_id").value = documentId
+        document.getElementById("document_title").value = documentTitle
+        document.getElementById("document_description").value = documentDescription
+    }
+</script>
+{% endblock content %}
+
+{% block script %}
+<script>
+
+</script>
+{% endblock script %}

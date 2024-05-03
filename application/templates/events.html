@@ -1,13 +1,13 @@
 {% extends 'application_base.html' %}
 
 {% block content %}
+{% now "Y-m-d" as today %}
 <section class="section_events-banner bgs-lightblue py-4 py-sm-5">
 <div class="container">
     <div class="row">
         <div class="col-lg-6 align-self-center">
-            <p class="cl-blue fs-14"># Lorem ipsum</p>
             <h2 class="test-bold fs-40 font-size cl-darkblue">Events</h2>
-            <p class="cl-blue-1 fs-15 pt-4 right-padding">Loreum Ipsum is simply dummy text of the printing and typesetting industry.</p>
+            <p class="cl-blue-1 fs-15 pt-4 right-padding">Register yourself for our upcomming events.</p>
         </div>
         <div class="col-lg-6 about-banner text-lg-right text-center">
             <img src="assets\images\test-banner.png" alt="" class="img-fluid">
@@ -20,42 +20,50 @@
         <div class="row justify-content-center blogContainer">
 
             {% for obj in object_list %}
-            <div class="col-lg-4 col-sm-6 pb-4 mb-lg-2 blogDiv">
-                <span>
-                     <div class="events-content h-100 position-relative br-30">
-                         <img src="{{obj.image.url}}" alt="{{obj.image_alt_name}}" class="w-100 br-30">
-                         <div class="content-events px-4">
-                             <p class="events-round bgs-lightgrey px-4 test-medium cl-darkblue p-1 br-30 d-inline-block">
-                                 {{obj.label}}</p>
-                             <h3 class="test-semibold fs-18 lh-25 cl-white mb-2">{{obj.title}}</h3>
-                            <div class="d-xl-flex justify-content-between align-items-center pt-xl-2">
-                            <p class="test-semibold cl-white mb-xl-0"><i class="fa fa-calendar pr-2" aria-hidden="true"></i>{{ obj.event_date|date:"d M Y" }}</p>
-                                <a data={{obj.id}} class="decrt-none fs-15 test-semibold br-30 py-2 px-4 cl-black 
-                                    {% if obj in registered_events %} 
-                                        bgs-white 
-                                    {% else %}
-                                        registerEvent bgs-yellow 
-                                    {% endif %}
-                                    d-inline-block"  {% if obj.is_external %} href="{{obj.event_meeting_link}}" target = "_blank" {% elif not user.is_authenticated %}href="/signin"{% elif obj in registered_events %} href="{% url 'application:events' %}" {% else %} href="#" {% endif %}
-                                >
-                                    {% if obj.is_external %}
-                                        External Event
-                                    {% elif obj in registered_events %}
-                                        Registered
-                                    {% else %}
-                                        Register Now
-                                    {% endif %}
-                                    <span class="arrow-spacing"></span><svg xmlns="http://www.w3.org/2000/svg" width="16.7" height="8.622"
-                                        class="arrow-color" viewBox="0 0 16.7 8.622">
-                                        <path id="btn-olympiad-size" data-name="Path 3"
-                                        d="M19.859,106.83l-4.249-3.89a.407.407,0,0,0-.576.576l3.553,3.195H3.686a.407.407,0,1,0,0,.815h14.9l-3.553,3.221a.407.407,0,1,0,.576.576l4.249-3.917A.407.407,0,0,0,19.859,106.83Z"
-                                        transform="translate(-3.278 -102.821)" fill="#fff"></path>
-                                </svg></a>
-                            </div>
-                         </div>
-                     </div>
-                 </span>
-            </div>
+                {% if not obj.is_deleted %}
+                    <div class = "col-lg-4 col-sm-6" {% if today >= obj.event_date|date:"Y-m-d" %}
+                        style = "pointer-events: none"
+                    {% endif %}>
+                        <h3 class="test-semibold fs-18 lh-25 mb-2">{{obj.title}}</h3>
+                        <div class="pb-4 mb-lg-2 blogDiv">
+                            <span>
+                                <div class="events-content h-100 position-relative br-30">
+                                    <img src="{{obj.image.url}}" alt="{{obj.image_alt_name}}" class="w-100 br-30">
+                                    <div class="content-events px-4">
+                                        <p class="events-round bgs-lightgrey px-4 test-medium cl-darkblue p-1 br-30 d-inline-block">
+                                            {{obj.label}}</p>
+                                        <div class="d-xl-flex justify-content-between align-items-center pt-xl-2">
+                                        <p class="test-semibold cl-white mb-xl-0"><i class="fa fa-calendar pr-2" aria-hidden="true"></i>{{ obj.event_date|date:"d M Y" }}</p>
+                                            <a data={{obj.id}} class="decrt-none fs-15 test-semibold br-30 py-2 px-4 cl-black 
+                                                {% if obj in registered_events %} 
+                                                    bgs-white 
+                                                {% else %}
+                                                    registerEvent bgs-yellow 
+                                                {% endif %}
+                                                d-inline-block"  {% if obj.is_external %} href="{{obj.event_meeting_link}}" target = "_blank" {% elif not user.is_authenticated %}href="/signin"{% elif obj in registered_events %} href="{% url 'application:events' %}" {% else %} href="#" {% endif %}
+                                            >
+                                                {% if today >= obj.event_date|date:"Y-m-d" %}
+                                                    Expired
+                                                {% elif obj.is_external %}
+                                                    External Event
+                                                {% elif obj in registered_events %}
+                                                    Registered
+                                                {% else %}
+                                                    Register Now
+                                                {% endif %}
+                                                <span class="arrow-spacing"></span><svg xmlns="http://www.w3.org/2000/svg" width="16.7" height="8.622"
+                                                    class="arrow-color" viewBox="0 0 16.7 8.622">
+                                                    <path id="btn-olympiad-size" data-name="Path 3"
+                                                    d="M19.859,106.83l-4.249-3.89a.407.407,0,0,0-.576.576l3.553,3.195H3.686a.407.407,0,1,0,0,.815h14.9l-3.553,3.221a.407.407,0,1,0,.576.576l4.249-3.917A.407.407,0,0,0,19.859,106.83Z"
+                                                    transform="translate(-3.278 -102.821)" fill="#fff"></path>
+                                            </svg></a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </span>
+                        </div>
+                    </div>
+                {% endif %}
             {% endfor %}
 
         </div>
@@ -201,30 +209,7 @@ $(".registerEvent").click(function(event){
             },
             dataType: 'json',
             success:function(response){
-                console.log(response)
-                var options = {
-                    key: response.razorpay_key,
-                    amount: response.price, 
-                    currency: "INR",
-                    order_id: response.order_id,
-                    callback_url: response.callback_url,
-                    redirect: true,
-                    modal: { 
-                        escape: false,
-                    },
-                    handler: function (response){
-                        console.log(response)
-                    }
-                };
-                var rzp1 = new Razorpay(options);
-                rzp1.open();
-                //swal({
-                //        title: "Success",
-                //        text: response['msg'],
-                //        icon: "success",
-                //    }).then(function() {
-                //        window.location.reload();
-                //    });
+                window.location.href = response.url
             }   
         });
     }
@@ -276,3 +261,4 @@ function registerEvent(id){
 </script>
 
 {% endblock script %}
+

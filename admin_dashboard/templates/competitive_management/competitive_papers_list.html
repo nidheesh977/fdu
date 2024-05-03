@@ -1,6 +1,7 @@
 {% extends 'admin_dashboard_base.html' %}
 {% block content %}
 <div class="container-fluid">
+    <a href = "#" style="pointer-events: none;">{{breadcrumb}}</p>
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-sm-flex align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Create Paper</h6>
@@ -64,6 +65,10 @@
                     <div class="form-group col-12">
                         <label>Price <span class="text-danger">*</span></label>
                         <input name="price" type="number" class="form-control form-control-user" required>
+                    </div>
+                    <div class="form-group col-12">
+                        <label>Repay Price <span class="text-danger">*</span></label>
+                        <input name="repay_price" type="number" class="form-control form-control-user" required>
                     </div>
                     <div class="form-group col-12">
                         <label>General Instructions <span class="text-danger">*</span></label>
@@ -237,4 +242,4 @@
     });
    
     </script>
-{% endblock script %}
+{% endblock script %} 

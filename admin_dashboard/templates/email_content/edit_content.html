@@ -1,0 +1,51 @@
+{% extends 'admin_dashboard_base.html' %}
+{% block content %}
+<style>
+    .form-check-input {
+        margin-top: 8px;
+        margin-left: -27px;
+        width: 20px;
+        height: 20px;
+    }
+    select {
+        background-color: #fff;
+        border: 1px solid #d1d3e2;
+        height: 50px;
+        padding: 12px;
+    }
+</style>
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"></h1>
+        <a href="{% url 'admin_dashboard:email-content-list' %}" class="d-inline-block btn btn-sm btn-warning shadow-sm"><i class="fas fa-caret-square-left fa-sm text-white-50 pr-1"></i> Back</a>
+    </div>
+    <div class="p-4">
+        <form class="user row" method="POST">
+            {% csrf_token %}
+            <div class="form-group col-6">
+                <label>Mail for <span class="text-danger">*</span></label>
+                <select name="email_for" class="form-select w-100" required>
+                    {% for choice in mail_for %}
+                        <option value="{{choice}}" {% if choice == selected_mail_for %}selected{% endif %}>{{choice}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group col-6">
+                <label for="subject-input">Subject <span class="text-danger">*</span></label>
+                <input id="subject-input" value = "{{subject}}" class="form-control form-control-user" name="subject" type="text" required>
+            </div>
+            <div class="form-group col-12">
+                <label for = "content-input">Mail content <span class="text-danger">*</span></label>
+                <textarea id="content-input"  name="content" rows="2" class="form-control form-control-user" required>{{content}}</textarea>
+            </div>
+            <div class="col-12 text-center pt-4">
+                <input type="submit" class="btn-lg btn-primary border-0 bg-primary tex-white px-4">
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+
+{% block script %}
+
+{% endblock script %}

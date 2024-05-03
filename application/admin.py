@@ -31,9 +31,9 @@ class CustomUserAdmin(UserAdmin):
             "country",
             "state",
             "city",
-            "gender",
+            "gender"
             )}),
-        (_('Enrolls'), {'fields': ('subjects', 'papers','classes',)}),
+        # (_('Enrolls'), {'fields': ('subjects', 'papers','classes',)}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff','is_superuser',)}),
         (_('Important dates'), {
          'fields': ('last_login', 'created_on', 'updated_on')}
@@ -85,3 +85,7 @@ admin.site.register(StudentSubmittedAnswers)
 admin.site.register(AttendedPapers)
 admin.site.register(TempImages)
 admin.site.register(OlympiadExam)
+admin.site.register(HomePageCounts)
+admin.site.register(DownloadDocument)
+admin.site.register(MailContent)
+admin.site.register(PopupContent)

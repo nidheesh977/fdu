@@ -119,7 +119,7 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.office365.com'
 EMAIL_HOST_USER = "Info@firstedu.co.in"
-EMAIL_HOST_PASSWORD = "Firstedu@123"
+EMAIL_HOST_PASSWORD = "StepEdUFirst@3029"
 EMAIL_PORT = 587
 
 PHONENUMBER_DB_FORMAT = "NATIONAL"
@@ -130,9 +130,15 @@ LOGIN_URL = 'application:signin'
 
 
 # FIXME -> RAZORPAY KEY
-RAZORPAY_KEY_ID = "rzp_test_p5Rb3UXKoOaDRm"
-RAZORPAY_KEY_SECRET = "BNVJBf3b91Y9qd6ZKkFUm6Qx"
+RAZORPAY_KEY_ID = "rzp_test_N43gLBtLP7Ny7U"
+RAZORPAY_KEY_SECRET = "QYlFBbzaCKEg9Ok4KQtvRgGV"
 
+
+# Phonepe
+PHONEPE_MERCHANT_ID = "FIRSTEDUONLINE"  
+PHONEPE_SALT_KEY = "e8efa060-1348-42e1-91bc-68930587f021"
+
+SITE_URL = "https://firstedu.co.in"
 
 CSRF_TRUSTED_ORIGINS = [
     'https://api.razorpay.com',

@@ -24,6 +24,8 @@
                                     class="pl-3 cl-grey ">{{class_obj.title}}</span> </p>
                             <p> <span class="ts-name-title1 cl-black test-semibold">Paper Name</span> : <span
                                     class="pl-3 cl-grey ">{{paper_obj.title}}</span> </p>
+                            <p> <span class="ts-name-title1 cl-black test-semibold">Paper Description</span> : <span
+                                    class="pl-3 cl-grey ">{{paper_obj.description}}</span> </p>
                         </div>
                         <div class="col-sm-6 px-0">
                             <p> <span class="pr-4  fs-15 cl-black test-semibold">Subject Name </span> : <span
@@ -42,6 +44,8 @@
                                     class="pl-3 cl-grey ">{{subject_obj.title}}</span> </p>
                             <p> <span class="ts-name-title1 cl-black test-semibold">Paper Name</span> : <span
                                     class="pl-3 cl-grey ">{{paper_obj.title}}</span> </p>
+                            <p> <span class="ts-name-title1 cl-black test-semibold">Paper Description</span> : <span
+                                class="pl-3 cl-grey ">{{paper_obj.description}}</span> </p>
                         </div>
                         <div class="col-sm-6 px-0">
                             <p> <span class="pr-4 fs-15 cl-black test-semibold">Date</span> : <span
@@ -58,6 +62,8 @@
                                     class="pl-3 cl-grey ">{{competitive_exam_obj.exam_name}}</span> </p>
                             <p> <span class="ts-name-title1 cl-black test-semibold">Paper Name</span> : <span
                                     class="pl-3 cl-grey ">{{paper_obj.title}}</span> </p>
+                            <p> <span class="ts-name-title1 cl-black test-semibold">Paper Description</span> : <span
+                                class="pl-3 cl-grey ">{{paper_obj.description}}</span> </p>
                         </div>
                         <div class="col-sm-6 px-0">
                             <p> <span class="pr-4 fs-15 cl-black test-semibold">Date</span> : <span
@@ -70,6 +76,8 @@
                         <div class="col-sm-6 px-0">
                             <p> <span class="ts-name-title1 cl-black test-semibold">Paper Name</span> : <span
                                     class="pl-3 cl-grey ">{{paper_obj.title}}</span> </p>
+                            <p> <span class="ts-name-title1 cl-black test-semibold">Paper Description</span> : <span
+                                class="pl-3 cl-grey ">{{paper_obj.description}}</span> </p>
                         </div>
                         <div class="col-sm-6 px-0">
                             <p> <span class="pr-4 fs-15 cl-black test-semibold">Date</span> : <span
@@ -80,22 +88,22 @@
 
 
                     <div class="bgs-sky p-3 p-sm-5">
-                        <div class="general-ins">
-                            <h2 class="fs-20 cl-black test-bold pb-2 ">General Instructions</h2>
-                            <div class="exam-instructions">
-                                {{paper_obj.instructions|safe}}
+                        {% if paper_obj.instructions %}
+                            <div class="general-ins">
+                                <h2 class="fs-20 cl-black test-bold pb-2 ">General Instructions</h2>
+                                <div class="exam-instructions">
+                                    {{paper_obj.instructions|safe}}
+                                </div>
                             </div>
-                        </div>
+                        {% endif %}
                         <div class="scheme-part pt-2">
-                            <h2 class="fs-20 cl-black test-bold pb-2 ">Marking Scheme For All Two Sections</h2>
+                            <h2 class="fs-20 cl-black test-bold pb-2 ">Section questions:</h2>
                             <div class="exam-instructions">
-                                {% if not competitive_exam_obj and subject_obj %}
                                 {% for section_detail in section_details %}
-                                <p><b>{{section_detail.name}} ({{section_detail.section_questions_details}}) : </b> {{section_detail.description}}</p>
+                                    {% if section_detail.questions_count %}
+                                        <p><b>{{section_detail.name}} - {{section_detail.section_questions_details}}</p>
+                                    {% endif %}
                                 {% endfor %}
-                                {% else %}
-                                    <p><b>Total questions : {{total_ques}}</p>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -124,13 +132,14 @@
 
                             <div class="d-sm-flex align-items-center justify-content-end">
                                 <button class="bgs-yellow border-0 cl-black test-bold px-4 py-2 br-30 mr-1 mr-sm-3">Current Question : <span id="currentQuesCount">1</span></button>
-                                <button class="bgs-yellow border-0 cl-black test-bold px-4 py-2 br-30 mr-1 mr-sm-3">Pending Question : <span id="pendingQuesCount">0</span></button>
+                                <button class="bgs-yellow border-0 cl-black test-bold px-4 py-2 br-30 mr-1 mr-sm-3">Mark : <span id="markForQuestion">1</span></button>
                                 <div class="count-down-box d-inline-flex align-items-center br-10 mt-3 mt-sm-0">
                                     <span class="cl-white">Time Left :</span>
                                     <p class="fs-20 mb-0 cl-white pl-2" id="ten-countdown"></p>
                                 </div>
                             </div>
                         </div>
+                        <p id = "sectionDescription"></p>
                         <div class="row part-1-attend-test">
                             
                             <div class="col-12 setup-content" id="step-1">
@@ -352,12 +361,14 @@
                 success: function (response) {
                     var timesUp = false;
                     var quesText = response["question"];
+                    var mark = response["mark"];
                     var option1 = response["option1"];
                     var option2 = response["option2"];
                     var option3 = response["option3"];
                     var option4 = response["option4"];
                     var timeLimit = response["time_limit"];
                     var sectionName = response["section_name"];
+                    var section_description = response["section_description"];
                     var time = parseFloat(timeLimit);
 
                     var checkBox = $('input[name="radiogroup"]:checked')[0];
@@ -370,7 +381,9 @@
                     $("#option4").attr("disabled", false);
 
                     $("#quesText").text(quesText);
+                    $("#markForQuestion").text(mark);
                     $("#sectionName").text(sectionName);
+                    $("#sectionDescription").text(section_description);
 
                     $("#option1Value").text(option1);
                     $("#option2Value").text(option2);
@@ -406,7 +419,7 @@
                                     totSeconds = minToSec + sec;
                                     
                                     break;
-                
+
                                     case 3:
                                         var hour = parseInt(splitted_times[0]); 
                                         var minut = parseInt(splitted_times[1]); 
@@ -416,7 +429,7 @@
                                         totSeconds = hrsToSec + minToSec + sec;
 
                                     break;
-                
+
                                     default:
                                     // code block
                                 }
@@ -434,7 +447,7 @@
                     }
                     
                     setCheckedOption(id);
-                    
+
                     if(!timesUp){
                         // first time loading
                         if(TIMER == undefined){
@@ -456,18 +469,18 @@
                     
                 },
                 error: function(response) {
-                   alert("Something Wrong");
+                   alert("Question paper has no questions.");
                 }
             });
         }
 
-        
+
 
         $(document).on("click","#startTest", function(){
             if (confirm("are you ready to start") == true) {
                 var g = $(".quesCount").attr("data");
                 getQuestion(g);
-    
+
                 $('.start-exam').show();
                 $('.start-test').hide();
 
@@ -475,7 +488,7 @@
                 countdown( "ten-countdown", time, 00 );
 
             }
-            
+
 
         });
 
@@ -543,7 +556,7 @@
                 $("#next_ques").text("Next Question");
             }
 
-            $("#pendingQuesCount").text(pendingQuestions-1);
+            // $("#pendingQuesCount").text(pendingQuestions-1);
             
 
         });
@@ -620,7 +633,7 @@
                     finalSubmit();
                 }
                 var pendingQuestions = $("li." + "pending").find("*").length;
-                $("#pendingQuesCount").text(pendingQuestions);
+                // $("#pendingQuesCount").text(pendingQuestions);
 
         });
 

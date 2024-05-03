@@ -1199,3 +1199,9 @@ class ImportanceOfExam(TemplateView):
 
 class TermsConditions(TemplateView):
     template_name="terms_conditions.html"
+
+class DownloadDocumentView(View):
+    def get(self, request):
+        documents = DownloadDocument.objects.all()
+        context = {"documents": documents}
+        return render(request, "download_docs.html", context)

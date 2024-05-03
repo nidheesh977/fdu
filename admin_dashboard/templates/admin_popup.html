@@ -1,0 +1,51 @@
+{% extends 'admin_dashboard_base.html' %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Popup Content</h1>
+    </div>
+    <div class="p-4">
+        <form class="user row" method="post" enctype='multipart/form-data'>
+            {% csrf_token %}
+            <div class="form-group col-sm-6">
+                <label>Title</label>
+                <input type="text" maxlength="500" name="title" class="form-control form-control-user"  value = "{{popup.title}}">
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Sub title</label>
+                <input type="text" maxlength="500" name="sub_title" class="form-control form-control-user"  value = "{{popup.sub_title}}">
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Highlight text</label>
+                <input type="text" maxlength="50" name="highlight_text" class="form-control form-control-user"  value = "{{popup.highlight_text}}">
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Discount title</label>
+                <input type="text" maxlength="500" name="discount_title" class="form-control form-control-user"  value = "{{popup.discount_title}}">
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Discount percentage text</label>
+                <input type="text" maxlength="500" name="discount_percentage" class="form-control form-control-user"  value = "{{popup.discount_percentage}}">
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Discount description</label>
+                <input type="text" maxlength="500" name="discount_description" class="form-control form-control-user"  value = "{{popup.discount_description}}">
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Link</label>
+                <input type="text" maxlength="500" name="link" class="form-control form-control-user"  value = "{{popup.link}}">
+            </div>
+            <div class="form-group col-sm-6">
+                <label>Upload Image </label>
+                {% if popup.banner_image %}
+                    <p>Upload Link: <a href = "{{popup.banner_image.url}}">{{popup.banner_image.url}}</a> </p>
+                {% endif %}
+                <input class="form-control form-control-lg" name="banner_image" type="file" accept="image/png, image/jpeg">
+            </div>
+            <div class="col-12 text-center pt-4">
+                <input type="submit" class="btn-lg btn-primary border-0 bg-primary tex-white px-4">
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

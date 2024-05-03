@@ -44,4 +44,5 @@ urlpatterns = [
     path("make-payment-<str:id>",views.MakePayment.as_view(),name="makepayment"),
     path("checkout/<str:id>",views.Checkout.as_view(),name="checkout"),
     path("importance-of-exam",views.ImportanceOfExam.as_view(),name="importance-of-exam"),
+    path("download-documents",views.DownloadDocumentView.as_view(),name="download-documents"),
 ]

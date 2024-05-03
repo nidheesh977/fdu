@@ -65,7 +65,7 @@
                         <label>Repay Price <span class="text-danger">*</span></label>
                         <input name="repay_price" type="number" class="form-control form-control-user" required>
                     </div>
-                    <div class="form-group col-12">
+                    <!-- <div class="form-group col-12">
                         <label>Meta Title <span class="text-danger">*</span></label>
                         <input type="text" maxlength="50" name="meta_title" class="form-control form-control-user" required>
                     </div>
@@ -76,7 +76,7 @@
                     <div class="form-group col-sm-6">
                         <label>Meta Keywords <span class="text-danger">*</span></label>
                         <textarea rows="1" name="meta_keywords" class="form-control form-control-user" required></textarea>
-                    </div>
+                    </div> -->
                     <div class="col-12 text-center pt-4">
                         <input type="submit" class="btn-lg btn-primary border-0 bg-primary tex-white px-4">
                     </div>
@@ -91,7 +91,7 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-dark" id="exampleModalLabel">Create Class</h5>
+                <h5 class="modal-title text-dark" id="exampleModalLabel">Edit Class</h5>
                 <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">×</span>
                 </button>
@@ -115,7 +115,7 @@
                         <label>Repay Price <span class="text-danger">*</span></label>
                         <input name="repay_price" id="repay_price" type="number" class="form-control form-control-user" required>
                     </div>
-                    <div class="form-group col-12">
+                    <!-- <div class="form-group col-12">
                         <label>Meta Title <span class="text-danger">*</span></label>
                         <input type="text" id="meta_title" maxlength="50" name="meta_title" class="form-control form-control-user" required>
                     </div>
@@ -126,7 +126,7 @@
                     <div class="form-group col-sm-6">
                         <label>Meta Keywords <span class="text-danger">*</span></label>
                         <textarea rows="1" id="meta_keywords" name="meta_keywords" class="form-control form-control-user" required></textarea>
-                    </div>
+                    </div> -->
                     <input type="hidden" id="idValue" name="id" class="btn-lg btn-primary border-0 bg-primary tex-white px-4">
 
                     <div class="col-12 text-center pt-4">
@@ -188,9 +188,9 @@
                 console.log(response);
                 $("#class_title").val(response["obj"]["title"]);
                 $("#class_description").text(response["obj"]["description"]);
-                $("#meta_title").val(response["obj"]["meta_title"]);
-                $("#meta_description").text(response["obj"]["meta_description"]);
-                $("#meta_keywords").text(response["obj"]["meta_keywords"]);
+                //$("#meta_title").val(response["obj"]["meta_title"]);
+                //$("#meta_description").text(response["obj"]["meta_description"]);
+                //$("#meta_keywords").text(response["obj"]["meta_keywords"]);
                 $("#idValue").val(response["obj"]["id"]);
                 $("#price").val(response["obj"]["price"]);
                 $("#repay_price").val(response["obj"]["repay_price"]);

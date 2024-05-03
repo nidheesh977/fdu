@@ -84,14 +84,15 @@
             },
             dataType: 'json',
             success: function (response) {
-                alert("Notification send successfully")
+                console.log("Notification send successfully")
             },
             error: function(response) {
-               alert("Something Wrong");
+               console.log("Something Wrong");
             }
         });
+        alert("Notification send successfully")
     });
-
+    
 
 </script>
 {% endblock script %}

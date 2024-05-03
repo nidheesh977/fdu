@@ -1,5 +1,35 @@
 {% extends 'application_base.html' %}
 {% load static %}
+{% block metadetails %}
+    <title>Online Olympiad Exam - First Edu</title>
+    <meta name="description" content="Join the excitement of the Online Olympiad Exam with First Edu! Elevate
+    your academic journey and challenge yourself with our comprehensive platform.
+    Prepare, compete, and excel in the ultimate educational showdown. Enroll now!">
+    <meta name="keywords" content="English Olympiad Online Test for Class 1, Maths Olympiad for Class 1
+    Online Test, Maths Olympiad Mock Test for Class 1, NSO Online Practice Test Class 1,
+    Online Olympiad Exam, Online Olympiad Test, Olympiad Exam for Class 1 Online,
+    English Olympiad Online Test for Class 2, Maths Olympiad for Class 2 Online Test,
+    Maths Olympiad Mock Test for Class 2, NSO Online Practice Test Class 2, Online
+    Olympiad Exam, Online Olympiad Test, Olympiad Exam for Class 2 Online, English
+    Olympiad Online Test for Class 3, Maths Olympiad for Class 3 Online Test, Maths
+    Olympiad Mock Test for Class 3, NSO Online Practice Test Class 3, Online Olympiad
+    Exam, Online Olympiad Test, Olympiad Exam for Class 3 Online, English Olympiad
+    Online Test for Class 4, Maths Olympiad for Class 4 Online Test, Maths Olympiad Mock
+    Test for Class 4, NSO Online Practice Test Class 4, Online Olympiad Exam, Online
+    Olympiad Test, Olympiad Exam for Class 4 Online, English Olympiad Online Test for
+    Class 5, Maths Olympiad for Class 5 Online Test, Maths Olympiad Mock Test for Class
+    5, NSO Online Practice Test Class 5, Online Olympiad Exam, Online Olympiad Test,
+    Olympiad Exam for Class 5 Online, English Olympiad Online Test for Class 6, Maths
+    Olympiad for Class 6 Online Test, Maths Olympiad Mock Test for Class 6, NSO Online
+    Practice Test Class 6, Online Olympiad Exam, Online Olympiad Test, Olympiad Exam
+    for Class 6 Online, English Olympiad Online Test for Class 7, Maths Olympiad for Class
+    7 Online Test, Maths Olympiad Mock Test for Class 7, NSO Online Practice Test Class
+    7, Online Olympiad Exam, Online Olympiad Test, Olympiad Exam for Class 7 Online,
+    English Olympiad Online Test for Class 8, Maths Olympiad for Class 8 Online Test,
+    Maths Olympiad Mock Test for Class 8, NSO Online Practice Test Class 8, Online
+    Olympiad Exam, Online Olympiad Test, Olympiad Exam for Class 8 Online">
+    <link rel="canonical" href="https://firstedu.co.in/olympiad" />
+{% endblock metadetails %}
 {% block content %}
 {% now "Y-m-d" as today %}
 <section class="section_class-banner bgs-lightblue py-4 py-sm-5">
@@ -7,8 +37,7 @@
         <div class="row">
             <div class="col-lg-6 align-self-center">
                 <h2 class="test-bold fs-40 font-size cl-darkblue">Olympiad Exams</h2>
-                <p class="cl-blue-1 fs-15 py-4 right-padding">Loreum Ipsum is simply dummy text of the printing and
-                    typesetting industry.</p>
+                <p class="cl-blue-1 fs-15 py-4 right-padding">All papers are designed to improve your academic prowess.</p>
                 <a href="#viewClass" class="text-white fs-15 bgs-black decrt-none px-5 d-inline-block py-2 lh-35 landing-links">View
                     Exam
                     <span class="arrow-spacing"></span><svg xmlns="http://www.w3.org/2000/svg" width="16.7"
@@ -28,9 +57,7 @@
     <div class="container">
         <div class="text-center">
             <h2 class=" test-bold head-size fs-45 cl-black pb-1 lh-55">All Olympiad Exams</h2>
-            <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-lg-1  pb-lg-4">Lorem ipsum dolor sit amet adipisicing elit.
-                Commodi aut recusandae illo. Voluptatibus illo delectus totam earum
-                quo unde provident exercitationem eligendi! provident exercitationem.</p>
+            <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-lg-1  pb-lg-4">FirstEdu brings international level Olympiads <br />Test yourself and add more feather to your crown.</p>
         </div>
         <div class="d-flex justify-content-end py-4">
             <select class="form-control" id="classDropDown">
@@ -82,18 +109,16 @@
         <div class="row">
             <div class="col-lg-6 col-12 align-self-center">
                 <h2 class="test-bold fs-45  head-size cl-black  pb-md-3 lh-55">What we offer</h2>
-                <p class="fs-15 cl-dark  pr-lg-5">Lorem ipsum dolor sit ametLorem ipsulor sit amet consectetur
-                    adipisicing elit. Harum porro quae nam perferendis nostrum perspiciatis pariatur maiores doloremque
-                    sequi aliquam facere expedita facilis totam tempora, quas nesciunt illo cum fuga mollitia assumenda
-                    debitis omnis. Deserunt aut modi est inventore. Officia ratione quae aperiam sequi nisi accusantium
-                    placeat deser.</p>
-                <p class="fs-15 cl-dark right-padding">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sequi,
-                    labore nostrum, beatae molestiae adipisci, illo distinctio aliquid sapiente nemo aspernatur
-                    voluptate doloremque tempora itaque quia?</p>
+                <ul style = "padding-left: 30px;">
+                    <li>School exams</li>
+                    <li>Competitive exams</li>
+                    <li>Events</li>
+                    <li>Olympiads</li>
+                </ul>
             </div>
 
             <div class="col-lg-6 col-12 pt-lg-0 pt-3 text-center text-lg-left">
-                <img src="{% static 'images\we-offer.png' %}" class="img-fluid we-offer-img  ml-xl-5" alt="Los Angeles">
+                <img src="{% static 'images/we_offer_img.jpg' %}" class="img-fluid we-offer-img  ml-xl-5" alt="Los Angeles">
             </div>
         </div>
     </div>
@@ -103,23 +128,20 @@
         <div class="row">
             <div class="col-lg-6">
                 <h2 class="test-bold fs-35 head-size cl-black pb-2 pt-3 lh-55">Frequently Asked Question</h2>
-                <p class="fs-15 cl-dark pb-3 frequent-right">Lorem ipsum Lorem ipsum dolor sit dolor sit amet
-                    consectetur pisicing Quod deserunt quo totam dignissimos sint impedit.</p>
                 <div id="sections_courselanding-faq" class="section_courselanding-faq bgs-light">
                     <div class="accordion" id="category_1">
                         <div class="card pb-3">
                             <div class="card-header bgs-lightblue " id="category1_one">
                                 <a href="#" class="btn-header-link decrt-none " data-toggle="collapse"
                                     data-target="#category1-1" aria-expanded="true" aria-controls="category1-1">
-                                    <p class="fs-15 test-medium radius cl-black  pl-5 pr-5 py-3 mb-0">Lorem Ipsum is simply
-                                        dummy text dummy?</P>
+                                    <p class="fs-15 test-medium radius cl-black  pl-5 pr-5 py-3 mb-0">Why should I take exams?</P>
                                 </a>
                                 <div id="category1-1" class="collapse show" aria-labelledby="category1_one"
                                     data-parent="#category_1">
                                     <div class="card-body">
-                                        <p class="fs-15 cl-dark pl-5 pr-5">Lorem Ipsum is simply dummy text of the
-                                            printing and typesetting industry. Lorem Ipsum has been the industry's
-                                            standard dummy text</p>
+                                        <p class="fs-15 cl-dark pl-5 pr-5">
+                                            Exams are imperative and plays crucial role in overall development of individual. It plays an important role in the process of learning by assessing the knowledge of students and at the same time exposing their strengths and weaknesses. Therefore, always take exams to evaluate yourself.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -128,17 +150,14 @@
                             <div class="card-header bgs-lightblue" id="category1_two">
                                 <a href="#" class="btn-header-link collapsed decrt-none" data-toggle="collapse"
                                     data-target="#category1-2" aria-expanded="true" aria-controls="category1-2">
-                                    <p class="fs-15 test-medium  cl-black pl-5 pr-5 py-3 mb-0">Lorem Ipsum is simply dummy
-                                        text dummy text dummy text</P>
+                                    <p class="fs-15 test-medium  cl-black pl-5 pr-5 py-3 mb-0">Why FirstEdu exams?</P>
                                 </a>
 
 
                                 <div id="category1-2" class="collapse" aria-labelledby="category1_two"
                                     data-parent="#category_1">
                                     <div class="card-body">
-                                        <p class="fs-15 cl-dark pl-5 pr-5">Lorem Ipsum is simply dummy text of the
-                                            printing and typesetting industry. Lorem Ipsum has been the industry's
-                                            standard dummy text</p>
+                                        <p class="fs-15 cl-dark pl-5 pr-5">FirstEdu exams are spread over wide range of subjects and topics. It tries to cover the areas which are trending in all competitive papers thereby preparing the students to tackle any exams in the world.</p>
                                     </div>
                                 </div>
                             </div>
@@ -147,17 +166,14 @@
                             <div class="card-header bgs-lightblue" id="category1_three">
                                 <a href="#" class="btn-header-link collapsed decrt-none" data-toggle="collapse"
                                     data-target="#category1-3" aria-expanded="true" aria-controls="category1-3">
-                                    <p class="fs-15 test-medium  cl-black  pl-5 pr-5 py-3 mb-0">Lorem Ipsum is simply dummy
-                                        text dummy text dummy text</P>
+                                    <p class="fs-15 test-medium  cl-black  pl-5 pr-5 py-3 mb-0">Who can take the exams</P>
                                 </a>
 
 
                                 <div id="category1-3" class="collapse" aria-labelledby="category1_three"
                                     data-parent="#category_1">
                                     <div class="card-body">
-                                        <p class="fs-15 cl-dark pl-5 pr-5">Lorem Ipsum is simply dummy text of the
-                                            printing and typesetting industry. Lorem Ipsum has been the industry's
-                                            standard dummy text</p>
+                                        <p class="fs-15 cl-dark pl-5 pr-5">Any individual can take exams based on his/her requirement. Students can take school based practice papers or skill based competitive exams to sharpen their skills and become masters of their subjects.</p>
                                     </div>
                                 </div>
                             </div>
@@ -166,17 +182,19 @@
                             <div class="card-header bgs-lightblue" id="category1_four">
                                 <a href="#" class="btn-header-link collapsed decrt-none" data-toggle="collapse"
                                     data-target="#category1-4" aria-expanded="true" aria-controls="category1-4">
-                                    <p class="fs-15 test-medium cl-black  pl-5 pr-5 py-3 mb-0">Lorem Ipsum is simply dummy
-                                        text dummy text dummy text</P>
+                                    <p class="fs-15 test-medium cl-black  pl-5 pr-5 py-3 mb-0">What are FirstEdu Olympiads</P>
                                 </a>
 
 
                                 <div id="category1-4" class="collapse" aria-labelledby="category1_four"
                                     data-parent="#category_1">
                                     <div class="card-body">
-                                        <p class="fs-15 cl-dark pl-5 pr-5">Lorem Ipsum is simply dummy text of the
-                                            printing and typesetting industry. Lorem Ipsum has been the industry's
-                                            standard dummy text</p>
+                                        <p class="fs-15 cl-dark pl-5 pr-5">FirstEdu Olympiads are specially
+                                            designed exams to find young geniuses
+                                            across the world. These exams
+                                            inculcates logical thinking ability,
+                                            scientific temperament and application
+                                            of concepts in wider sense.</p>
                                     </div>
                                 </div>
                             </div>
@@ -185,23 +203,22 @@
                             <div class="card-header bgs-lightblue" id="category1_five">
                                 <a href="#" class="btn-header-link collapsed decrt-none" data-toggle="collapse"
                                     data-target="#category1-5" aria-expanded="true" aria-controls="category1-5">
-                                    <p class="fs-15 test-medium cl-black  pl-5 pr-5 py-3 mb-0">Lorem Ipsum is simply dummy
-                                        text dummy text dummy text</P>
+                                    <p class="fs-15 test-medium cl-black  pl-5 pr-5 py-3 mb-0">What are FirstEdu events</P>
                                 </a>
 
 
                                 <div id="category1-5" class="collapse" aria-labelledby="category1_five"
                                     data-parent="#category_1">
                                     <div class="card-body">
-                                        <p class="fs-15 cl-dark pl-5 pr-5">Lorem Ipsum is simply dummy text of the
-                                            printing and typesetting industry. Lorem Ipsum has been the industry's
-                                            standard dummy text</p>
+                                        <p class="fs-15 cl-dark pl-5 pr-5">FirstEdu events are designed for
+                                            improving skills of students in extra-
+                                            curricular activities like writing,
+                                            speaking, spelling, drawing etc. which
+                                            are equally important for overall
+                                            development of an individual.</p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="pt-4">
-                            <button class="text-white load-more fs-13 decrt-none cl-white bgs-black d-inline-block border-0 cursor py-2 lh-35">LOAD MORE</button>
                         </div>
                     </div>
                 </div>
@@ -212,34 +229,7 @@
         </div>
     </div>
 </section>
-<section class="section_home-student-say py-4 py-sm-5 mt-3">
-     <div class="container">
-         <div class="text-center">
-             <h2 class=" test-bold head-size fs-45 cl-black lh-55">What Students Say</h2>
-             <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-md-3 pt-1 student">Lorem ipsum dolor sit amet adipisicing
-                 elit. Commodi aut recusandae illo. Voluptatibus illo delectus totam earum
-                 quo unde provident exercitationem eligendi! provident exercitationem.</p>
-         </div>
-         <div class="review-slider owl-carousel owl-theme pt-lg-4">
-            {% for testiObj in testimonials %}
-            <div class="item row">
-                <div class="col-lg-2">
-                    <img src="{{testiObj.image.url}}" alt="{{testiObj.image_alt_name}}" class="mr-5 rounded-circle"
-                        style="width:78px;">
-                </div>
-                <div class="col-lg-10 double-quates">
-                    <h6 class="feedback-font  test-bold cl-black padding fs-18">{{testiObj.client_name}}</h6>
-                    <p class="fs-13 cl-dark mb-0">{{testiObj.client_role}}</p>
-                    <div class="quates-img">
-                        <img src="{% static 'images/double-qts.png' %}" alt="">
-                    </div>
-                    <p class="fs-14 cl-dark col-lg-10 pl-0 pr-0 pr-lg-4">{{testiObj.description}}</p>
-                </div>
-            </div>
-        {% endfor %}
-         </div>
-     </div>
- </section>
+
  {% endblock content %}
 
 

@@ -1,5 +1,36 @@
 {% extends 'application_base.html' %}
 {% load static %}
+
+{% block metadetails %}
+    <title>Online Test Series for CBSE, ICSE and State Syllabus | Mock Test Series | Olympiad Exams - First Edu</title>
+    <meta name="description" content="Prepare smarter for CBSE, ICSE, and State Syllabus exams with our
+    online test series. Optimize your scores at FirstEdu!">
+    <meta name="keywords" content="Online Test Series for CBSE, Online Test Series for ICSE, Online Test
+    Series for State Syllabus, Mock Test Series, Olympiad Exams, CBSE School Exam,
+    CBSE Mock Test, Mock Test for CBSE, CBSE Maths Mock Test, CBSE Maths Online
+    Test, CBSE Online Test, CBSE Science Mock Test, CBSE Science Online Test, CBSE
+    Online Test, Online MCQ Test for CBSE Science, ICSE School Exam, ICSE Mock Test,
+    ICSE Mock Test, Mock Test ICSE, Online Mock Test for ICSE, Mock Test ICSE, Online
+    MCQ Test for English, Online MCQ Test for Hindi, Online MCQ Test for Maths, Online
+    MCQ Test for Social Science, English Olympiad Online Test, Maths Olympiad Online
+    Test, Maths Olympiad Mock Test, NSO Online Practice Test, Online Aptitude Test,
+    Online Test, Math MCQ Online Test, Online Test, Online Competitive Exam, Online
+    Test for Maths, Online Test for English, English Online Test, Maths Online Test, Mock
+    Test, Online Exam, Online Test English, Online Test Maths, Online Test Science,
+    Online MCQ Test for Science, Maths Test Online, Online Quiz, Online Test Maths,
+    Online Test Science, Social Science Online Test, SST Online Test, Competitive Exams
+    Online, English Grammar Online Test, English Online Test, English Online Test, Maths
+    MCQ Online Test, Maths Online Test, Maths Online Quiz, Maths Test Online, NCERT
+    Science Online Test, NCERT Online Test, NCERT Online Test Science, NCERT
+    Science Online Test, Online Math Test, Online Science Test, Online English Grammar
+    Test, Online Exam, Online Grammar Test, Online Maths Quiz, Online Maths Quiz,
+    Online MCQ Test, Online Aptitude Test, Speed Live Test, Spell Bee, Vocabulary Live
+    Test, Vocabulary Speed Test, School Exam Preparation, School Exams, School Live
+    Test, State Board School Exams, Calculation Practice, Maths Calculation Practice, Fast
+    Calculation Practice, Math Calculation Practice, Online Maths Calculation Test, Maths
+    Calculation Speed Test Online, Online Calculation Practice">
+{% endblock metadetails %}
+
 {% block content %}
 {% now "Y-m-d" as today %}
 {% now "H:i:s" as current_time %}
@@ -25,7 +56,7 @@
                     {% endif %}
                 </div>
                 <div class="col-lg-6 pt-5 pt-lg-0">
-                    <img src="{{obj.image.url}}" alt="" class="img-fluid home-banner-img">
+                    <img src="{{obj.image.url}}" alt="{{obj.main_title}}" class="img-fluid home-banner-img">
                 </div>
             </div>
             {% endfor %}
@@ -38,31 +69,31 @@
             <div class="row counter_method justify-content-center">
                 <div class="col-lg-3 col-6 my-3 text-center counter-count">
                     <div class="d-flex justify-content-center align-items-center">
-                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="8">0</h2>
+                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="{{home_counts.visitors}}">0</h2>
                         <span class="test-bold cl-white about-banner fs-30 pl-1">+</span>
                     </div>
-                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Lorem ipsum</h5>
+                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Visitors</h5>
                 </div>
                 <div class="col-lg-3 col-6 my-3 text-center counter-count">
                     <div class="d-flex justify-content-center align-items-center">
-                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="25">0</h2>
+                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="{{home_counts.registered_students}}">0</h2>
                         <span class="test-bold cl-white about-banner fs-30 pl-1">+</span>
                     </div>
-                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Lorem ipsum dolor</h5>
+                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Registered Students</h5>
                 </div>
                 <div class="col-lg-3 col-6 my-3 text-center counter-count">
                     <div class="d-flex justify-content-center align-items-center">
-                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="9">0</h2>
+                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="{{home_counts.exams_taken}}">0</h2>
                         <span class="test-bold cl-white about-banner fs-30 pl-1">+</span>
                     </div>
-                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Lorem ipsum dolor</h5>
+                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Exams Taken</h5>
                 </div>
                 <div class="col-lg-3 col-6 my-3 text-center counter-count">
                     <div class="d-flex justify-content-center align-items-center">
-                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="50">0</h2>
+                        <h2 class="fs-45 test-bold counter cl-darkblue" data-count="{{home_counts.olympiad_attempted}}">0</h2>
                         <span class="test-bold cl-white about-banner fs-30 pl-1">+</span>
                     </div>
-                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Lorem ipsum</h5>
+                    <h5 class="test-bold fs-20 font-size cl-darkblue mb-0">Olympiads Attempted</h5>
                 </div>
             </div>
         </div>
@@ -74,7 +105,7 @@
 
         <div class="text-center">
             <h2 class=" test-bold head-size fs-45 cl-black pb-1 lh-55">Popular Exam</h2>
-            <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-lg-1  pb-lg-4">This will contain links to exams which are popular. Initially, we will decide, however, later on the exams which are taken in the highest number will come under this section.</p>
+            <!-- <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-lg-1  pb-lg-4">This will contain links to exams which are popular. Initially, we will decide, however, later on the exams which are taken in the highest number will come under this section.</p> -->
         </div>
 
         <div class="oly-tap px-md-5 text-center">
@@ -189,7 +220,7 @@
                                             class="col-sm-8 col-md-12 col-lg-8 enroll-center pl-lg-0 d-flex justify-content-between justify-content-lg-end align-items-center">
                                             {% if today == obj.exam_date|date:"Y-m-d" and one_hour_after|time:"H:i:s" >= obj.exam_time|time:"H:i:s"%}
                                                 <span
-                                                    class="text-white fs-15 bgs-black decrt-none enroll-button">Live
+                                                    class="text-white fs-15 bgs-black decrt-none enroll-button">Expired
                                                 </span>
                                             {% elif obj in olympiad_enrolled %}
                                                 <span class="text-white fs-15 bgs-black decrt-none enroll-button">Registered</span>
@@ -223,9 +254,10 @@
     <div class="container py-3">
         <div class="text-center pb-1">
             <h2 class=" test-bold head-size fs-45 cl-black lh-55">Result Announcement</h2>
-            <p class="fs-15 cl-dark px-0 col-md-8 mx-auto pt-md-3 pt-1 student">Lorem ipsum dolor sit amet adipisicing
-                elit. Commodi aut recusandae illo. Voluptatibus illo delectus totam earum
-                quo unde provident exercitationem eligendi! provident exercitationem.</p>
+            <p class="fs-15 cl-dark px-0 col-md-8 mx-auto pt-md-3 pt-1 student">
+                As it is said, "Hard work definitely pays off".<br />
+                So, here is the best part- <span style = "font-weight: bold; color: #000">"RESULTS"</span>, for what you have worked hard.
+            </p>
         </div>
         <div class="row pt-4 justify-content-center">
             {% for result in resultsObj %}
@@ -277,13 +309,15 @@
         <div class="row">
             <div class="col-lg-6">
                 <h2 class=" test-bold head-size fs-45 cl-black lh-55">Our Latest News</h2>
-                <p class="fs-15 cl-dark pt-md-3 pt-1 student">Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-                    Eligendi numquam quasi aliquid nam non, praesentium quae nostrum saepe illum, a sed tempore adipisci
-                    debitis tenetur quos quibusdam iure assumenda aspernatur. Lorem, ipsum dolor sit amet consectetur
-                    adipisicing elit. Quas ducimus porro magnam enim possimus ullam animi? Accusantium optio suscipit
-                    eaque animi at magnam nam explicabo libero! Earum ad similique dolorum. <br> Lorem ipsum dolor sit
-                    amet, consectetur adipisicing elit. Nostrum, temporibus. Nemo reiciendis sint magni esse! Unde
-                    officia placeat veniam consectetur optio quo iusto in non. Ducimus quae saepe nulla sunt.</p>
+                <p class="fs-15 cl-dark pt-md-3 pt-1 student">
+                    <span style = "font-weight: bold">Launching</span>
+                    <ul style = "padding-left: 30px">
+                        <li>Practice papers for school students.</li>
+                        <li>Competitive exams for skill enhancements.</li>
+                        <li>Olympiads to identify young geniuses.</li>
+                        <li>Events to sharpen personality and soft skills.</li>
+                    </ul>
+                </p>
             </div>
             <div class="col-lg-6">
                 <div class="bgs-sky p-5 br-20">
@@ -354,9 +388,7 @@
     <div class="container">
         <div class="text-center">
             <h2 class=" test-bold head-size fs-45 cl-black lh-55">What Students Say</h2>
-            <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-md-3 pt-1 student">Lorem ipsum dolor sit amet adipisicing
-                elit. Commodi aut recusandae illo. Voluptatibus illo delectus totam earum
-                quo unde provident exercitationem eligendi! provident exercitationem.</p>
+            <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-md-3 pt-1 student">Their Love and Faith !</p>
         </div>
         <div class="review-slider owl-carousel owl-theme pt-lg-4">
             {% for testiObj in testimonials %}
@@ -384,14 +416,19 @@
         <div class="row">
             <div class="col-lg-6 col-12 align-self-center">
                 <h2 class="test-bold fs-45  head-size cl-black  pb-md-3 lh-55">What we offer</h2>
-                <p class="fs-15 cl-dark  pr-lg-5">Lorem ipsum dolor sit ametLorem ipsulor sit amet consectetur
-                    adipisicing elit. Harum porro quae nam perferendis nostrum perspiciatis pariatur maiores doloremque
-                    sequi aliquam facere expedita facilis totam tempora, quas nesciunt illo cum fuga mollitia assumenda
-                    debitis omnis. Deserunt aut modi est inventore. Officia ratione quae aperiam sequi nisi accusantium
-                    placeat deser.</p>
-                <p class="fs-15 cl-dark right-padding">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sequi,
-                    labore nostrum, beatae molestiae adipisci, illo distinctio aliquid sapiente nemo aspernatur
-                    voluptate doloremque tempora itaque quia?</p>
+                <p class="fs-15 cl-dark  pr-lg-5">At <span style = "font-weight: bold; color: #000">FirstEdu</span> we offer-</p>
+                <ul style = "padding-left: 30px;">
+                    <li>Perfection</li>
+                    <li>Confidence</li>
+                    <li>A clear concept</li>
+                    <li>Efficiency</li>
+                    <li>Excellence</li>
+                    <li>Open mind- to think high</li>
+                    <li>Speed</li>
+                    <li>Aptitude</li>
+                    <li>Altitude</li>
+                    <li>Happiness</li>
+                </ul>
             </div>
 
             <div class="col-lg-6 col-12 pt-lg-0 pt-3 text-center text-lg-left">
@@ -405,52 +442,60 @@
     <div class="container py-3">
         <div class="text-center">
             <h2 class=" test-bold head-size fs-45 cl-black lh-55">Our Events</h2>
-            <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-md-3 pt-1 student">Lorem ipsum dolor sit amet adipisicing
-                elit. Commodi aut recusandae illo. Voluptatibus illo delectus totam earum
-                quo unde provident exercitationem eligendi! provident exercitationem.</p>
+            <p class="fs-15 cl-dark px-0 col-md-8 m-auto pt-md-3 pt-1 student">FirstEdu conducts wide range of creative events which
+                encourages brainstorming and can cause the grey
+                matters to work overtime (&#x1F642;) that too in fun filled
+                manner.</p>
         </div>
         <div class="row pt-4 pt-sm-5 px-xl-4 justify-content-center">
             {% for event in events %}
-            <div class="col-lg-4 col-md-6 pb-4 pb-lg-0">
-                <a href="{% url 'application:events' %}">
-                    <div class="events-content h-100 position-relative br-30">
-                        <img src="{{event.image.url}}" alt="{{event.image_alt_name}}" class="w-100 br-30">
-                        <div class="content-events px-4">
-                            <p class="events-round bgs-lightgrey px-4 test-medium cl-darkblue p-1 br-30 d-inline-block">
-                                {{event.label}}</p>
-                            <h3 class="test-semibold fs-18 lh-25 cl-white mb-2">{{event.title}}</h3>
-                            <div class="d-xl-flex justify-content-between align-items-center pt-xl-2">
-                                <p class="test-semibold cl-white mb-xl-0">
-                                    <i class="fa fa-calendar pr-2" aria-hidden="true"></i>
-                                    {{event.event_date|date:"d M Y" }}
-                                </p>
-                                <a data={{event.id}} class="decrt-none fs-15 test-semibold br-30 py-2 px-4 cl-black 
-                                {% if event in registered_events %}
-                                    bgs-white 
-                                {% elif user.is_authenticated %}
-                                    registerEvent bgs-yellow 
-                                {% else %}
-                                    bgs-yellow 
-                                {% endif %}
-                                d-inline-block" {% if event.is_external %} href="{{event.event_meeting_link}}" target = "_blank" {% elif not user.is_authenticated %}href="/signin"{% elif event in registered_events %} href="{% url 'application:events' %}" {% else %} href="#" {% endif %}>
-                                    {% if event.is_external %}
-                                        External event
-                                    {% elif event in registered_events %}
-                                        Registered
+            <div class = "col-lg-4 col-md-6">
+                <h3 class="test-semibold fs-18 lh-25 mb-2">{{event.title}}</h3>
+                <div class="pb-4 pb-lg-0">
+                    <a href="{% url 'application:events' %}">
+                        <div class="events-content h-100 position-relative br-30">
+                            <img src="{{event.image.url}}" alt="{{event.image_alt_name}}" class="w-100 br-30">
+                            <div class="content-events px-4" {% if today >= event.event_date|date:"Y-m-d" %}
+                                style = "pointer-events: none"
+                            {% endif %}>
+                                <p class="events-round bgs-lightgrey px-4 test-medium cl-darkblue p-1 br-30 d-inline-block">
+                                    {{event.label}}</p>
+                                <div class="d-xl-flex justify-content-between align-items-center pt-xl-2">
+                                    <p class="test-semibold cl-white mb-xl-0">
+                                        <i class="fa fa-calendar pr-2" aria-hidden="true"></i>
+                                        {{event.event_date|date:"d M Y" }}
+                                    </p>
+                                    <a data={{event.id}} class="decrt-none fs-15 test-semibold br-30 py-2 px-4 cl-black 
+                                    {% if event in registered_events %}
+                                        bgs-white 
+                                    {% elif user.is_authenticated %}
+                                        registerEvent bgs-yellow 
                                     {% else %}
-                                        Register Now
+                                        bgs-yellow 
                                     {% endif %}
-                                    <span class="arrow-spacing"></span><svg xmlns="http://www.w3.org/2000/svg"
-                                        width="16.7" height="8.622" class="arrow-color" viewBox="0 0 16.7 8.622">
-                                        <path id="btn-olympiad-size" data-name="Path 3"
-                                            d="M19.859,106.83l-4.249-3.89a.407.407,0,0,0-.576.576l3.553,3.195H3.686a.407.407,0,1,0,0,.815h14.9l-3.553,3.221a.407.407,0,1,0,.576.576l4.249-3.917A.407.407,0,0,0,19.859,106.83Z"
-                                            transform="translate(-3.278 -102.821)" fill="#fff"></path>
-                                    </svg>
-                                </a>
+                                    d-inline-block" {% if event.is_external %} href="{{event.event_meeting_link}}" target = "_blank" {% elif not user.is_authenticated %}href="/signin"{% elif event in registered_events %} href="{% url 'application:events' %}" {% else %} href="#" {% endif %}
+                                    >
+                                        {% if today >= event.event_date|date:"Y-m-d" %}
+                                            Expired
+                                        {% elif event.is_external %}
+                                            External event
+                                        {% elif event in registered_events %}
+                                            Registered
+                                        {% else %}
+                                            Register Now
+                                        {% endif %}
+                                        <span class="arrow-spacing"></span><svg xmlns="http://www.w3.org/2000/svg"
+                                            width="16.7" height="8.622" class="arrow-color" viewBox="0 0 16.7 8.622">
+                                            <path id="btn-olympiad-size" data-name="Path 3"
+                                                d="M19.859,106.83l-4.249-3.89a.407.407,0,0,0-.576.576l3.553,3.195H3.686a.407.407,0,1,0,0,.815h14.9l-3.553,3.221a.407.407,0,1,0,.576.576l4.249-3.917A.407.407,0,0,0,19.859,106.83Z"
+                                                transform="translate(-3.278 -102.821)" fill="#fff"></path>
+                                        </svg>
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
+                </div>
             </div>
             {% endfor %}
             
@@ -495,30 +540,7 @@
                 },
                 dataType: 'json',
                 success:function(response){
-                    console.log(response)
-                    var options = {
-                        key: response.razorpay_key,
-                        amount: response.price, 
-                        currency: "INR",
-                        order_id: response.order_id,
-                        callback_url: response.callback_url,
-                        redirect: true,
-                        modal: { 
-                            escape: false,
-                        },
-                        handler: function (response){
-                            console.log(response)
-                        }
-                    };
-                    var rzp1 = new Razorpay(options);
-                    rzp1.open();
-                    //swal({
-                    //        title: "Success",
-                    //        text: response['msg'],
-                    //        icon: "success",
-                    //    }).then(function() {
-                    //        window.location.reload();
-                    //    });
+                    window.location.href = response.url
                 }   
             });
         }
@@ -528,3 +550,4 @@
 </script>
 
 {% endblock script %}
+
